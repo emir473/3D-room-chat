@@ -36,7 +36,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script>
-        // WEB AUDIO API SYNTHESIZER SETUP FOR GUARANTEED AUDIO
+        // WEB AUDIO API SYNTHESIZER SETUP
         let audioCtx = null;
         let bgInterval = null;
 
@@ -49,7 +49,7 @@
             }
         }
 
-        // Clean synth message notification sound (Pling-Pop)
+        // Klingeln / Pling bei eingehender Nachricht
         function playMessageSound() {
             try {
                 initAudio();
@@ -57,11 +57,10 @@
                 const gain = audioCtx.createGain();
                 
                 osc.type = 'sine';
-                // Schnell ansteigender, klarer Ton (wie eine echte Chat-App)
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1); // A5
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1); 
                 
-                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime); // Sound etwas kräftiger
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
                 
                 osc.connect(gain);
@@ -72,33 +71,61 @@
             } catch(e) { console.log(e); }
         }
 
-        // Live synthesizer logic for chill ambient music notes
+        // Neue, bessere Melodie-Logik mit tiefer Vibe-Frequenz und höherer Lautstärke
         function startChillMusic() {
             try {
                 initAudio();
-                const notes = [261.63, 293.66, 329.63, 392.00, 440.00]; // Chill pentatonic notes (C, D, E, G, A)
+                
+                // Schöne Akkord-Frequenzen (eine Oktave tiefer für die perfekte Tiefe)
+                // Kombinationen aus Am, F, C, G Vibe-Noten
+                const chords = [
+                    [220.00, 261.63, 329.63], // A-Moll Vibe
+                    [174.61, 261.63, 349.23], // F-Dur Vibe
+                    [261.63, 329.63, 392.00], // C-Dur Vibe
+                    [196.00, 293.66, 392.00]  // G-Dur Vibe
+                ];
+                let chordIndex = 0;
                 
                 bgInterval = setInterval(() => {
-                    if (!audioCtx) return;
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
+                    if (!audioCtx || audioCtx.state === 'suspended') return;
                     
-                    const randomNote = notes[Math.floor(Math.random() * notes.length)];
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(randomNote / 2, audioCtx.currentTime); // Eine Oktave tiefer für soften Bass-Vibe
+                    // Wähle den aktuellen Akkord und wechsle ihn für eine echte Song-Struktur ab
+                    const currentChord = chords[chordIndex];
+                    chordIndex = (chordIndex + 1) % chords.length;
                     
-                    gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
-                    gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.8); // Sanftes Einblenden
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.8); // Langes Ausklingen
+                    // Spiele alle 3 Noten des Akkords gleichzeitig für einen fetten Sound
+                    currentChord.forEach((note, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        
+                        osc.type = 'sine';
+                        // Getroffene Note wird leicht zeitversetzt (Arpeggio) und tief abgespielt
+                        osc.frequency.setValueAtTime(note / 2, audioCtx.currentTime + (i * 0.15)); 
+                        
+                        gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+                        // LAUTSTÄRKE ERHÖHT: von 0.06 auf 0.25 erhöht, damit es auf Stufe 1 gut hörbar ist!
+                        gain.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 0.6); 
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.5); 
+                        
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + 3.8);
+                    });
                     
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 4.0);
-                }, 2500); // Alle 2.5 Sekunden ertönt ein neuer entspannter Ton
+                }, 3000); // Alle 3 Sekunden wechselt die Hintergrund-Harmonie
             } catch(e) { console.log(e); }
         }
+
+        // Automatisches Einfrieren / Pausieren, wenn der Tab gewechselt wird
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && audioCtx) {
+                audioCtx.suspend();
+            } else if (!document.hidden && audioCtx) {
+                audioCtx.resume();
+            }
+        });
 
         // 1. 3D WORLD & LIVING ROOM SETUP
         const scene = new THREE.Scene();
@@ -183,8 +210,6 @@
                     } else if (data.type === 'chat') {
                         addMessage('Friend', data.text);
                         showBubble('Friend', data.text);
-                        
-                        // GARANTIERT FUNKTIONIERENDER NOTIFICATION SOUND
                         playMessageSound();
                     } else if (data.type === 'typing') {
                         document.getElementById('typing').innerText = data.text ? 'Friend is typing...' : '';
@@ -248,8 +273,6 @@
             }
 
             scene.remove(cube);
-
-            // AKTIVIERT TRACKS & GENERATOR ÜBER DEN KLICK
             startChillMusic();
             
             const floorMat = new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.7});
@@ -383,7 +406,7 @@
             
             setTimeout(() => {
                 activeMesh.remove(bubbleSprite);
-            }, 10000); // 10 Sekunden bleiben aktiv
+            }, 10000);
         }
 
         window.addEventListener('resize', () => {
