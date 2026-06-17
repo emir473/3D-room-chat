@@ -20,9 +20,8 @@
 </head>
 <body>
 
-    <!-- AUDIO PLAYER FÜR SOUNDS UND MUSIK -->
-    <audio id="bgMusic" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
-    <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2357/2357-84.wav"></audio>
+    <audio id="bgMusic" loop src="https://assets.mixkit.co/music/preview/mixkit-serene-view-1392.mp3"></audio>
+    <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav"></audio>
 
     <div id="ui">
         <div id="status">Generating ID...</div>
@@ -42,35 +41,30 @@
     <script>
         // 1. 3D WORLD & LIVING ROOM SETUP
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xd4a373); // Fallback orange-brown
+        scene.background = new THREE.Color(0xd4a373);
         
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Lights (Cozy living room atmosphere)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Etwas dunkler für den Lampen-Effekt
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
         
         const warmLight = new THREE.DirectionalLight(0xffeacc, 0.3);
         warmLight.position.set(5, 8, 5);
         scene.add(warmLight);
 
-        // Welcoming rotating preview cube
         const cube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({color: 0x00fff0, wireframe: true}));
         scene.add(cube);
         camera.position.z = 4;
 
-        // Variablen für Roblox-Animation & Objekte
         let player1Mesh, player2Mesh;
-        let p1Bubble, p2Bubble;
         let animationTime = 0;
 
         function animate() { 
             requestAnimationFrame(animate); 
             
-            // Menü-Würfel drehen
             if(cube && scene.children.includes(cube)) {
                 cube.rotation.x += 0.01; 
                 cube.rotation.y += 0.01; 
@@ -78,8 +72,8 @@
             
             // ROBLOX ATEM-ANIMATION LOOP
             animationTime += 0.04;
-            let breatheY = Math.sin(animationTime) * 0.025; // Sanftes Auf- und Abwackeln
-            let breatheScale = 1 + Math.sin(animationTime) * 0.015; // Leichtes Atmen/Größenänderung
+            let breatheY = Math.sin(animationTime) * 0.025;
+            let breatheScale = 1 + Math.sin(animationTime) * 0.015;
 
             if (player1Mesh) {
                 player1Mesh.position.y = 0.5 + breatheY;
@@ -94,7 +88,7 @@
         }
         animate();
 
-        // 2. NETWORK (PEERJS) LOGIC WITH SHORT 6-DIGIT IDS
+        // 2. NETWORK (PEERJS) LOGIC
         const shortId = Math.floor(100000 + Math.random() * 900000).toString();
         const peer = new Peer(shortId);
         let conn, isHost = false;
@@ -129,8 +123,12 @@
                     } else if (data.type === 'chat') {
                         addMessage('Friend', data.text);
                         showBubble('Friend', data.text);
-                        // SOUND BEI NEUER NACHRICHT ABSPIELEN
-                        document.getElementById('msgSound').play().catch(e => console.log("Audio blockiert"));
+                        
+                        // SOUND BEI REINkommender NACHRICHT ABSPIELEN
+                        const msgAudio = document.getElementById('msgSound');
+                        msgAudio.volume = 0.6;
+                        msgAudio.currentTime = 0;
+                        msgAudio.play().catch(e => console.log("Audio blockiert"));
                     } else if (data.type === 'typing') {
                         document.getElementById('typing').innerText = data.text ? 'Friend is typing...' : '';
                     }
@@ -138,7 +136,7 @@
             });
         }
 
-        // 3. LIVING ROOM CREATION & VISUAL LABELS
+        // 3. LIVING ROOM CREATION
         function createLabel(text, isBubble = false) {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
@@ -171,7 +169,6 @@
 
         function createCharacter(color) {
             const group = new THREE.Group();
-            
             const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshStandardMaterial({color: color, roughness: 0.3}));
             group.add(body);
             
@@ -195,9 +192,9 @@
 
             scene.remove(cube);
 
-            // BACKGROUND CHILL MUSIK STARTEN
-            document.getElementById('bgMusic').volume = 0.3; // Angenehme Lautstärke
-            document.getElementById('bgMusic').play().catch(e => console.log("Musik braucht Klick"));
+            const bgMusic = document.getElementById('bgMusic');
+            bgMusic.volume = 0.15;
+            bgMusic.play().catch(e => console.log("User-Klick Fehler abgesichert"));
             
             // 3D BODEN (Brauner Holzboden)
             const floorMat = new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.7});
@@ -205,14 +202,14 @@
             floor.position.y = -0.1;
             scene.add(floor);
 
-            // ROTER TEPPICH (Liegt flach unter dem Tisch auf dem Boden)
+            // ROTER TEPPICH
             const carpetMat = new THREE.MeshStandardMaterial({color: 0x990000, roughness: 0.9});
             const carpet = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.02, 3.5), carpetMat);
             carpet.position.set(0, 0.01, 0);
             scene.add(carpet);
 
             // ORANGE WÄNDE
-            const wallMat = new THREE.MeshStandardMaterial({color: 0xe67e22, roughness: 0.6}); // Schönes sattes Orange
+            const wallMat = new THREE.MeshStandardMaterial({color: 0xe67e22, roughness: 0.6});
             const backWall = new THREE.Mesh(new THREE.BoxGeometry(12, 6, 0.2), wallMat);
             backWall.position.set(0, 3, -5);
             scene.add(backWall);
@@ -231,20 +228,19 @@
             const glass = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), glassMat);
             windowGroup.add(glass);
 
-            const frameMat = new THREE.MeshStandardMaterial({color: 0xffffff}); // Weiße Stangen
+            const frameMat = new THREE.MeshStandardMaterial({color: 0xffffff});
             const borderTopBot = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), frameMat); borderTopBot.position.set(0, 1, 0); windowGroup.add(borderTopBot);
             const borderTopBot2 = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), frameMat); borderTopBot2.position.set(0, -1, 0); windowGroup.add(borderTopBot2);
             const borderLeftRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight.position.set(1.5, 0, 0); windowGroup.add(borderLeftRight);
             const borderLeftRight2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight2.position.set(-1.5, 0, 0); windowGroup.add(borderLeftRight2);
 
-            // Kreuz-Stangen (Mitte)
             const horizBar = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 0.1), frameMat); windowGroup.add(horizBar);
             const vertBar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2, 0.1), frameMat); windowGroup.add(vertBar);
             scene.add(windowGroup);
 
             // HÄNGENDE GLÜHBIRNE MIT LAMPE
             const lampGroup = new THREE.Group();
-            lampGroup.position.set(0, 6, 0); // Oben an der Decke angedockt
+            lampGroup.position.set(0, 6, 0);
 
             const wireMat = new THREE.MeshBasicMaterial({color: 0x111111});
             const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.8), wireMat); wire.position.y = -0.9; lampGroup.add(wire);
@@ -253,10 +249,10 @@
             const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), bulbMat); bulb.position.y = -1.8; lampGroup.add(bulb);
             scene.add(lampGroup);
 
-            // ECHTER LICHTSTRAHL AUF DEN TISCH (SpotLight)
+            // ECHTER LICHTSTRAHL AUF DEN TISCH
             const spotLight = new THREE.SpotLight(0xfff2cc, 3.5, 10, Math.PI / 4, 0.5, 1);
-            spotLight.position.set(0, 4.2, 0); // Genau unter der Glühbirne
-            spotLight.target.position.set(0, 0, 0); // Zielt voll auf den Tisch
+            spotLight.position.set(0, 4.2, 0);
+            spotLight.target.position.set(0, 0, 0);
             scene.add(spotLight);
             scene.add(spotLight.target);
 
@@ -271,17 +267,17 @@
             let p1LabelText = isHost ? "You" : "Friend";
             let p2LabelText = isHost ? "Friend" : "You";
             
-            // SPAWN SPIONE (Mit perfekt korrigiertem Abstand, damit sie nicht im Tisch stecken!)
-            player1Mesh = createCharacter(0x0055ff); // Blau
-            player1Mesh.position.set(-2.3, 0.5, 0); // Weiter nach links geschoben!
-            player1Mesh.lookAt(0, 0.5, 0); // Schaut zur Tischmitte
+            // SPAWN AVATARS
+            player1Mesh = createCharacter(0x0055ff);
+            player1Mesh.position.set(-2.3, 0.5, 0);
+            player1Mesh.lookAt(0, 0.5, 0);
             
             const p1Label = createLabel(p1LabelText); p1Label.position.y = 0.85; player1Mesh.add(p1Label);
             scene.add(player1Mesh);
 
-            player2Mesh = createCharacter(0xff2233); // Rot
-            player2Mesh.position.set(2.3, 0.5, 0); // Weiter nach rechts geschoben!
-            player2Mesh.lookAt(0, 0.5, 0); // Schaut zur Tischmitte
+            player2Mesh = createCharacter(0xff2233);
+            player2Mesh.position.set(2.3, 0.5, 0);
+            player2Mesh.lookAt(0, 0.5, 0);
             
             const p2Label = createLabel(p2LabelText); p2Label.position.y = 0.85; player2Mesh.add(p2Label);
             scene.add(player2Mesh);
@@ -290,7 +286,7 @@
             document.getElementById('chatBox').style.display = 'flex';
         }
 
-        // 4. CHAT SYSTEM & TEMPORARY SPEECH BUBBLES
+        // 4. CHAT SYSTEM
         const chatInput = document.getElementById('chatInput');
         
         chatInput.addEventListener('input', () => {
@@ -338,9 +334,10 @@
             bubbleSprite.isBubbleSprite = true;
             activeMesh.add(bubbleSprite);
             
+            // FIX: HIER JETZT AUF 10000ms (10 SEKUNDEN) ERHÖHT!
             setTimeout(() => {
                 activeMesh.remove(bubbleSprite);
-            }, 4000);
+            }, 10000);
         }
 
         window.addEventListener('resize', () => {
