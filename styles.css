@@ -4,13 +4,15 @@
 
 body {
     margin: 0;
-    font-family: system-ui, sans-serif;
+    overflow-x: hidden; /* Verhindert horizontales Scrollen auf Mobilgeräten */
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: white;
     background-color: #1a1a1a;
     -webkit-user-select: none;
     user-select: none;
 }
 
+/* Navigationsleiste fixiert, damit sie über der 3D-Szene/Inhalten schwebt */
 nav {
     display: flex;
     flex-wrap: wrap;
@@ -20,6 +22,11 @@ nav {
     gap: 0.5rem;
     border-bottom: solid 1px #444;
     background-color: #222;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 90;
 }
 
 nav a {
@@ -32,6 +39,7 @@ nav a {
     text-decoration: none;
     color: #bbb;
     transition: all 0.2s ease;
+    font-size: 14px; /* Garantiert einheitliche Button-Größen */
 }
 
 nav a:hover {
@@ -47,6 +55,7 @@ nav a[aria-current='page'] {
 
 main {
     padding: 1rem;
+    margin-top: 80px; /* Verhindert, dass die fixierte Navigationsleiste den Text verdeckt */
 }
 
 h1 {
