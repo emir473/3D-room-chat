@@ -20,6 +20,10 @@
 </head>
 <body>
 
+    <!-- AUDIO PLAYER FÜR SOUNDS UND MUSIK -->
+    <audio id="bgMusic" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+    <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2357/2357-84.wav"></audio>
+
     <div id="ui">
         <div id="status">Generating ID...</div>
         <input type="text" id="peerId" placeholder="Friend's 6-Digit ID">
@@ -38,7 +42,7 @@
     <script>
         // 1. 3D WORLD & LIVING ROOM SETUP
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf3e9dc); // Cozy wall color
+        scene.background = new THREE.Color(0xd4a373); // Fallback orange-brown
         
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -46,10 +50,10 @@
         document.body.appendChild(renderer.domElement);
 
         // Lights (Cozy living room atmosphere)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Etwas dunkler für den Lampen-Effekt
         scene.add(ambientLight);
         
-        const warmLight = new THREE.DirectionalLight(0xffeacc, 0.5);
+        const warmLight = new THREE.DirectionalLight(0xffeacc, 0.3);
         warmLight.position.set(5, 8, 5);
         scene.add(warmLight);
 
@@ -58,12 +62,34 @@
         scene.add(cube);
         camera.position.z = 4;
 
+        // Variablen für Roblox-Animation & Objekte
+        let player1Mesh, player2Mesh;
+        let p1Bubble, p2Bubble;
+        let animationTime = 0;
+
         function animate() { 
             requestAnimationFrame(animate); 
+            
+            // Menü-Würfel drehen
             if(cube && scene.children.includes(cube)) {
                 cube.rotation.x += 0.01; 
                 cube.rotation.y += 0.01; 
             }
+            
+            // ROBLOX ATEM-ANIMATION LOOP
+            animationTime += 0.04;
+            let breatheY = Math.sin(animationTime) * 0.025; // Sanftes Auf- und Abwackeln
+            let breatheScale = 1 + Math.sin(animationTime) * 0.015; // Leichtes Atmen/Größenänderung
+
+            if (player1Mesh) {
+                player1Mesh.position.y = 0.5 + breatheY;
+                player1Mesh.scale.set(breatheScale, breatheScale, breatheScale);
+            }
+            if (player2Mesh) {
+                player2Mesh.position.y = 0.5 + breatheY;
+                player2Mesh.scale.set(breatheScale, breatheScale, breatheScale);
+            }
+
             renderer.render(scene, camera); 
         }
         animate();
@@ -103,6 +129,8 @@
                     } else if (data.type === 'chat') {
                         addMessage('Friend', data.text);
                         showBubble('Friend', data.text);
+                        // SOUND BEI NEUER NACHRICHT ABSPIELEN
+                        document.getElementById('msgSound').play().catch(e => console.log("Audio blockiert"));
                     } else if (data.type === 'typing') {
                         document.getElementById('typing').innerText = data.text ? 'Friend is typing...' : '';
                     }
@@ -111,9 +139,6 @@
         }
 
         // 3. LIVING ROOM CREATION & VISUAL LABELS
-        let player1Mesh, player2Mesh;
-        let p1Bubble, p2Bubble;
-
         function createLabel(text, isBubble = false) {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
@@ -121,14 +146,12 @@
             const ctx = canvas.getContext('2d');
             
             if(isBubble) {
-                // Speech bubble styles
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
                 ctx.roundRect(10, 10, 492, 108, 20);
                 ctx.fill();
                 ctx.font = 'bold 24px Arial';
                 ctx.fillStyle = '#111111';
             } else {
-                // Name label styles
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
                 ctx.roundRect(100, 30, 312, 68, 12);
                 ctx.fill();
@@ -149,11 +172,9 @@
         function createCharacter(color) {
             const group = new THREE.Group();
             
-            // Base sphere body
             const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshStandardMaterial({color: color, roughness: 0.3}));
             group.add(body);
             
-            // Cute eyes to show rotation/front facing side
             const eyeMat = new THREE.MeshBasicMaterial({color: 0xffffff});
             const pupilMat = new THREE.MeshBasicMaterial({color: 0x000000});
             const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
@@ -173,54 +194,96 @@
             }
 
             scene.remove(cube);
+
+            // BACKGROUND CHILL MUSIK STARTEN
+            document.getElementById('bgMusic').volume = 0.3; // Angenehme Lautstärke
+            document.getElementById('bgMusic').play().catch(e => console.log("Musik braucht Klick"));
             
-            // 3D Living Room Floor (Wood Floor)
-            const floorMat = new THREE.MeshStandardMaterial({color: 0xbc8f8f, roughness: 0.6});
+            // 3D BODEN (Brauner Holzboden)
+            const floorMat = new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.7});
             const floor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 10), floorMat);
             floor.position.y = -0.1;
             scene.add(floor);
 
-            // Living Room Back Wall
-            const wallMat = new THREE.MeshStandardMaterial({color: 0xd4a373});
+            // ROTER TEPPICH (Liegt flach unter dem Tisch auf dem Boden)
+            const carpetMat = new THREE.MeshStandardMaterial({color: 0x990000, roughness: 0.9});
+            const carpet = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.02, 3.5), carpetMat);
+            carpet.position.set(0, 0.01, 0);
+            scene.add(carpet);
+
+            // ORANGE WÄNDE
+            const wallMat = new THREE.MeshStandardMaterial({color: 0xe67e22, roughness: 0.6}); // Schönes sattes Orange
             const backWall = new THREE.Mesh(new THREE.BoxGeometry(12, 6, 0.2), wallMat);
             backWall.position.set(0, 3, -5);
             scene.add(backWall);
             
-            // Little decorative window frame on back wall
-            const windowFrame = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 0.1), new THREE.MeshStandardMaterial({color: 0x4a3728}));
-            windowFrame.position.set(0, 3.5, -4.8);
-            scene.add(windowFrame);
+            // BLAUER HIMMEL HINTER DEM FENSTER
+            const skyMat = new THREE.MeshBasicMaterial({color: 0x5dade2});
+            const sky = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), skyMat);
+            sky.position.set(0, 3.5, -4.95);
+            scene.add(sky);
 
-            // Wooden Coffee Table
-            const table = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 1.8), new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.5}));
+            // DURCHSICHTIGES GLASFENSTER MIT WEISSEM KREUZ
+            const windowGroup = new THREE.Group();
+            windowGroup.position.set(0, 3.5, -4.9);
+
+            const glassMat = new THREE.MeshStandardMaterial({color: 0xffffff, transparent: true, opacity: 0.3, roughness: 0.1});
+            const glass = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), glassMat);
+            windowGroup.add(glass);
+
+            const frameMat = new THREE.MeshStandardMaterial({color: 0xffffff}); // Weiße Stangen
+            const borderTopBot = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), frameMat); borderTopBot.position.set(0, 1, 0); windowGroup.add(borderTopBot);
+            const borderTopBot2 = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), frameMat); borderTopBot2.position.set(0, -1, 0); windowGroup.add(borderTopBot2);
+            const borderLeftRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight.position.set(1.5, 0, 0); windowGroup.add(borderLeftRight);
+            const borderLeftRight2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight2.position.set(-1.5, 0, 0); windowGroup.add(borderLeftRight2);
+
+            // Kreuz-Stangen (Mitte)
+            const horizBar = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 0.1), frameMat); windowGroup.add(horizBar);
+            const vertBar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2, 0.1), frameMat); windowGroup.add(vertBar);
+            scene.add(windowGroup);
+
+            // HÄNGENDE GLÜHBIRNE MIT LAMPE
+            const lampGroup = new THREE.Group();
+            lampGroup.position.set(0, 6, 0); // Oben an der Decke angedockt
+
+            const wireMat = new THREE.MeshBasicMaterial({color: 0x111111});
+            const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.8), wireMat); wire.position.y = -0.9; lampGroup.add(wire);
+
+            const bulbMat = new THREE.MeshBasicMaterial({color: 0xfff2cc});
+            const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), bulbMat); bulb.position.y = -1.8; lampGroup.add(bulb);
+            scene.add(lampGroup);
+
+            // ECHTER LICHTSTRAHL AUF DEN TISCH (SpotLight)
+            const spotLight = new THREE.SpotLight(0xfff2cc, 3.5, 10, Math.PI / 4, 0.5, 1);
+            spotLight.position.set(0, 4.2, 0); // Genau unter der Glühbirne
+            spotLight.target.position.set(0, 0, 0); // Zielt voll auf den Tisch
+            scene.add(spotLight);
+            scene.add(spotLight.target);
+
+            // TISCH
+            const table = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 1.8), new THREE.MeshStandardMaterial({color: 0x4a2c11, roughness: 0.5}));
             table.position.set(0, 0.3, 0);
             scene.add(table);
 
-            // Camera View Placement
             camera.position.set(0, 3.5, 6.5);
             camera.lookAt(0, 0.8, 0);
 
-            // Dynamic Assignment of "You" and "Friend" based on roles
             let p1LabelText = isHost ? "You" : "Friend";
             let p2LabelText = isHost ? "Friend" : "You";
             
-            // Spawn Avatars
-            player1Mesh = createCharacter(0x0055ff); // Blue Character
-            player1Mesh.position.set(-1.6, 0.5, 0);
-            player1Mesh.lookAt(1.6, 0.5, 0);
+            // SPAWN SPIONE (Mit perfekt korrigiertem Abstand, damit sie nicht im Tisch stecken!)
+            player1Mesh = createCharacter(0x0055ff); // Blau
+            player1Mesh.position.set(-2.3, 0.5, 0); // Weiter nach links geschoben!
+            player1Mesh.lookAt(0, 0.5, 0); // Schaut zur Tischmitte
             
-            const p1Label = createLabel(p1LabelText);
-            p1Label.position.y = 0.85;
-            player1Mesh.add(p1Label);
+            const p1Label = createLabel(p1LabelText); p1Label.position.y = 0.85; player1Mesh.add(p1Label);
             scene.add(player1Mesh);
 
-            player2Mesh = createCharacter(0xff2233); // Red Character
-            player2Mesh.position.set(1.6, 0.5, 0);
-            player2Mesh.lookAt(-1.6, 0.5, 0);
+            player2Mesh = createCharacter(0xff2233); // Rot
+            player2Mesh.position.set(2.3, 0.5, 0); // Weiter nach rechts geschoben!
+            player2Mesh.lookAt(0, 0.5, 0); // Schaut zur Tischmitte
             
-            const p2Label = createLabel(p2LabelText);
-            p2Label.position.y = 0.85;
-            player2Mesh.add(p2Label);
+            const p2Label = createLabel(p2LabelText); p2Label.position.y = 0.85; player2Mesh.add(p2Label);
             scene.add(player2Mesh);
             
             document.getElementById('ui').style.display = 'none';
@@ -257,7 +320,6 @@
         }
 
         function showBubble(target, text) {
-            // Determine who gets the popup
             let activeMesh = null;
             if(target === 'You') {
                 activeMesh = isHost ? player1Mesh : player2Mesh;
@@ -267,18 +329,15 @@
             
             if(!activeMesh) return;
             
-            // Remove old bubble if exists
             activeMesh.children.forEach(child => {
                 if(child.isBubbleSprite) activeMesh.remove(child);
             });
             
-            // Build the bubble text sprite
             const bubbleSprite = createLabel(text, true);
-            bubbleSprite.position.y = 1.4; // Placed above the head label
+            bubbleSprite.position.y = 1.4; 
             bubbleSprite.isBubbleSprite = true;
             activeMesh.add(bubbleSprite);
             
-            // Delete bubble after exactly 4 seconds
             setTimeout(() => {
                 activeMesh.remove(bubbleSprite);
             }, 4000);
