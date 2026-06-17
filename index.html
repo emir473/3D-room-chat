@@ -22,11 +22,8 @@
         /* Layout adjustments for layout windows */
         #chatBox { position: absolute; bottom: 20px; left: 20px; width: 340px; height: 260px; background: rgba(20, 20, 20, 0.85); border: 1px solid #444; border-radius: 12px; display: none; flex-direction: column; padding: 12px; z-index: 100; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
         #messages { flex: 1; overflow-y: auto; font-size: 14px; margin-bottom: 8px; padding-right: 5px; }
-        
-        /* NEW Compact Media Layout styles */
-        #messages img, #messages video { max-width: 110px; max-height: 80px; border-radius: 6px; margin-top: 5px; display: inline-block; border: 2px solid #00fff0; cursor: pointer; object-fit: cover; background: #000; transition: transform 0.2s; }
-        #messages img:hover, #messages video:hover { transform: scale(1.04); }
-        #messages audio { width: 100%; margin-top: 5px; display: block; filter: hue-rotate(180deg); }
+        #messages img, #messages video { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; border: 1px solid #444; }
+        #messages audio { width: 100%; margin-top: 5px; display: block; }
         #messages .file-link { display: inline-block; background: #333; color: #00fff0; padding: 6px 12px; border-radius: 6px; text-decoration: none; margin-top: 5px; font-size: 12px; border: 1px solid #555; }
         #typing { font-size: 12px; color: #00fff0; height: 15px; margin-bottom: 4px; font-style: italic; }
         
@@ -35,12 +32,9 @@
         #chatInput { flex: 1; padding: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 20px; box-sizing: border-box; font-size: 14px; margin: 0; }
         
         /* Action Buttons styling */
-        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; flex-shrink: 0; transition: background 0.2s; font-size: 16px; margin: 0; position: relative; }
+        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; flex-shrink: 0; transition: background 0.2s; font-size: 16px; margin: 0; }
         .action-icon-btn:hover { background: #3a3a3a; }
         .action-icon-btn.active-rec { background: #ff2233; animation: pulse-rec 1.5s infinite; }
-
-        /* LIVE Recording Timer UI overlay */
-        #recTimerDisplay { display: none; position: absolute; left: 45px; background: rgba(255, 34, 51, 0.9); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; white-space: nowrap; z-index: 105; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
 
         @keyframes pulse-rec {
             0% { transform: scale(1); }
@@ -76,12 +70,6 @@
         #videoGrid { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         #remoteVideo { width: 100%; height: 100%; object-fit: cover; pointer-events: auto; }
         #localVideo { position: absolute; bottom: 20px; right: 20px; width: 100px; height: 150px; object-fit: cover; border: 2px solid #00fff0; border-radius: 8px; background: #000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transform: scaleX(-1); pointer-events: auto; }
-
-        /* NEW Immersive Fullscreen Lightbox Viewport Overlay */
-        #lightboxOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 5, 0.95); z-index: 2000; justify-content: center; align-items: center; }
-        #lightboxOverlay .lightbox-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: #ff2233; color: white; font-size: 24px; font-weight: bold; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 2010; }
-        #lightboxContainer { max-width: 90%; max-height: 85%; display: flex; justify-content: center; align-items: center; }
-        #lightboxContainer img, #lightboxContainer video { max-width: 100%; max-height: 85vh; border: 3px solid #00fff0; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); background: #000; }
 
         /* Utility hidden input field hooks */
         .hidden-file-input { display: none !important; }
@@ -137,15 +125,8 @@
                 <div class="popover-item" onclick="triggerFileInput('camera')">📸 <span>Take Photo/Video</span></div>
             </div>
             <input type="text" id="chatInput" placeholder="Type a message... (Press Enter)">
-            <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">🎙
-                <div id="recTimerDisplay">0:00</div>
-            </div>
+            <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">🎙</div>
         </div>
-    </div>
-
-    <div id="lightboxOverlay">
-        <button class="lightbox-close" onclick="closeLightbox()">✖</button>
-        <div id="lightboxContainer"></div>
     </div>
 
     <input type="file" id="genericFileInput" class="hidden-file-input" onchange="handleFileTransmission(this, 'file')">
@@ -157,7 +138,10 @@
     <script>
         let audioCtx = null;
         let bgTimeout = null;
-        let isMusicSupressed = false; // Internal flag to handle local music pauses
+        let isMusicPlaying = false;
+        let isAnimalVoiceSpeaking = false;
+        let activeAudioTagsPlaying = 0;
+        let isInActiveCall = false;
 
         function initAudio() {
             if (!audioCtx) {
@@ -185,56 +169,39 @@
             } catch(e) { console.log(e); }
         }
 
-        // NEW Web Audio API dynamic Animal Crossing synth speech synthesizer tone generator
-        function playAnimalSoundCharacter() {
-            try {
-                initAudio();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                // Classic high-pitched gibberish frequencies typical for Animal Crossing dialogue mapping layers
-                const baseFreq = 900 + (Math.random() * 450); 
-                osc.type = Math.random() > 0.5 ? 'triangle' : 'sine';
-                osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
-                
-                // Rapid frequency modulation chip tone effect 
-                osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.4, audioCtx.currentTime + 0.04);
-                
-                gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.045);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.045);
-            } catch(e) { console.log(e); }
-        }
-
         function startChillMusic() {
+            if (isMusicPlaying) return;
+            isMusicPlaying = true;
             try {
                 initAudio();
                 const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
                 function playNextNote() {
-                    if (!audioCtx) return;
+                    if (!audioCtx || !isMusicPlaying) return;
                     
-                    // If local suppression active (call/video/voice playback), bypass processing node pipeline triggers
-                    if (isMusicSupressed) {
-                        bgTimeout = setTimeout(playNextNote, 1000);
+                    // Komplett stoppen, wenn Medien laufen oder ein Anruf aktiv ist
+                    if (activeAudioTagsPlaying > 0 || isInActiveCall) {
+                        const randomDelay = Math.floor(Math.random() * 1600) + 1200;
+                        bgTimeout = setTimeout(playNextNote, randomDelay);
                         return;
                     }
-                    
+
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     const randomNote = notes[Math.floor(Math.random() * notes.length)];
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(randomNote, audioCtx.currentTime);
+                    
+                    // Bestimme Ziel-Lautstärke basierend auf der Animal Crossing Stimme
+                    let targetVolume = isAnimalVoiceSpeaking ? 0.05 : 0.35;
+                    
                     gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
-                    gain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 0.4); 
+                    gain.gain.linearRampToValueAtTime(targetVolume, audioCtx.currentTime + 0.4); 
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.8); 
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 3.0);
+                    
                     const randomDelay = Math.floor(Math.random() * 1600) + 1200;
                     bgTimeout = setTimeout(playNextNote, randomDelay);
                 }
@@ -242,9 +209,97 @@
             } catch(e) { console.log(e); }
         }
 
-        // External orchestration wrapper to toggle localized music suppression flows safely
-        function setMusicSuppressionState(shouldSuppress) {
-            isMusicSupressed = shouldSuppress;
+        function stopChillMusic() {
+            isMusicPlaying = false;
+            if (bgTimeout) {
+                clearTimeout(bgTimeout);
+                bgTimeout = null;
+            }
+        }
+
+        // Animal Crossing Stimm-Synthesizer mit globaler Statustracking-Logik
+        function speakAnimalCrossing(text) {
+            try {
+                initAudio();
+            } catch(e) { return; }
+            if(!audioCtx) return;
+
+            // Setze Flag auf true: Musik wird leiser
+            isAnimalVoiceSpeaking = true;
+
+            const words = text.split(" ");
+            let totalDuration = 0;
+
+            words.forEach((word, wordIdx) => {
+                const cleanWord = word.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+                if(cleanWord.length === 0) {
+                    totalDuration += 0.15;
+                    return;
+                }
+                
+                let wordPitchMod = 0.85 + (Math.random() * 0.4);
+                if(cleanWord.length > 6) wordPitchMod -= 0.1;
+                if(cleanWord.length < 3) wordPitchMod += 0.15;
+
+                for(let i = 0; i < cleanWord.length; i++) {
+                    const char = cleanWord[i];
+                    const charCode = char.charCodeAt(0);
+                    let baseFreq = 220;
+
+                    if(charCode >= 97 && charCode <= 122) {
+                        baseFreq = 200 + ((charCode - 97) * 18);
+                    } else if(charCode >= 48 && charCode <= 57) {
+                        baseFreq = 500 + ((charCode - 48) * 25);
+                    }
+
+                    baseFreq *= wordPitchMod;
+                    if(i % 2 === 0) baseFreq *= 1.12;
+
+                    const startTime = audioCtx.currentTime + totalDuration;
+                    const charDuration = 0.055 + (Math.random() * 0.025);
+
+                    const osc = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+
+                    const typeSelector = (charCode + i) % 3;
+                    if(typeSelector === 0) osc.type = 'triangle';
+                    else if(typeSelector === 1) osc.type = 'sawtooth';
+                    else osc.type = 'sine';
+
+                    osc.frequency.setValueAtTime(baseFreq, startTime);
+                    if(i === cleanWord.length - 1 && (char==='?' || char==='!')) {
+                        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.3, startTime + charDuration);
+                    } else {
+                        osc.frequency.linearRampToValueAtTime(baseFreq * (0.95 + Math.random()*0.1), startTime + charDuration);
+                    }
+
+                    gainNode.gain.setValueAtTime(0.0, startTime);
+                    gainNode.gain.linearRampToValueAtTime(0.28, startTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + charDuration);
+
+                    osc.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+
+                    osc.start(startTime);
+                    osc.stop(startTime + charDuration);
+
+                    totalDuration += charDuration - 0.012;
+                }
+                totalDuration += 0.04;
+            });
+
+            // Wenn die Sprache komplett fertig ist, setzen wir das Flag wieder zurück
+            setTimeout(() => {
+                isAnimalVoiceSpeaking = false;
+            }, totalDuration * 1000);
+        }
+
+        function handleMediaPlaybackStarted() {
+            activeAudioTagsPlaying++;
+        }
+
+        function handleMediaPlaybackEnded() {
+            activeAudioTagsPlaying = Math.max(0, activeAudioTagsPlaying - 1);
         }
 
         const scene = new THREE.Scene();
@@ -295,8 +350,6 @@
         let mediaRecorder = null;
         let voiceAudioChunks = [];
         let isVoiceRecording = false;
-        let voiceRecSeconds = 0;
-        let voiceRecTimerInterval = null;
         let targetPeerId = null;
         let currentCallIsVideo = false;
         let isUpgradingCall = false; 
@@ -304,7 +357,7 @@
         let myMicMuted = false;
         let remoteAudioMuted = false;
         let myCamMuted = false;
-        
+
         peer.on('open', id => {
             document.getElementById('status').innerHTML = 'Your ID: <b style="color:#00fff0; font-size:16px;">' + id + '</b>';
         });
@@ -337,13 +390,13 @@
                         joinRoom(false);
                     } else if (data.type === 'chat') {
                         addMessage('Friend', data.text);
-                        showBubble('Friend', data.text); // Passes actual text contents to render engine layer
+                        showBubble('Friend', "Sent a message");
                         playMessageSound();
                     } else if (data.type === 'typing') {
                         document.getElementById('typing').innerText = data.text ? 'Friend is typing...' : '';
                     } else if (data.type === 'media') {
                         addMediaMessage('Friend', data);
-                        showBubble('Friend', "[Media Attachment]");
+                        showBubble('Friend', "Sent a file");
                         playMessageSound();
                     } else if (data.type === 'call_decline') {
                         resetCallInterface();
@@ -368,8 +421,6 @@
             document.getElementById('callStateTitle').innerText = isUpgradingCall ? "Call Active" : "Incoming Call...";
             document.getElementById('callTypeSub').innerText = currentCallIsVideo ? "Incoming Video Call" : "Incoming Voice Call";
             
-            setMusicSuppressionState(true); // Suppress local music background context channels on incoming calls
-
             if (!isUpgradingCall) {
                 document.getElementById('incomingControls').style.display = 'flex';
                 document.getElementById('activeControls').style.display = 'none';
@@ -382,33 +433,20 @@
         async function initiateCall(wantVideo) {
             if(!targetPeerId) return alert("No peer connected to call.");
             currentCallIsVideo = wantVideo;
+            isInActiveCall = true; // Signalisiert, dass Musik pausieren soll
             try {
                 document.getElementById('callOverlay').style.display = 'flex';
                 document.getElementById('callStateTitle').innerText = "Calling Friend...";
                 document.getElementById('callTypeSub').innerText = wantVideo ? "Video Call Session" : "Voice Call Session";
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
-                
-                setMusicSuppressionState(true); // Suppress background channel execution
 
-                // HIGH QUALITY LAYER: Embedded explicit constraints ensuring ideal high-fidelity 720p/HD hardware acquisition contexts
-                localStream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: wantVideo ? {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: "user"
-                    } : false
-                });
-
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantVideo });
                 if(wantVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('localVideo').srcObject = localStream;
                 }
-
-                activeCallSession = peer.call(targetPeerId, localStream, {
-                    metadata: { video: wantVideo }
-                });
+                activeCallSession = peer.call(targetPeerId, localStream, { metadata: { video: wantVideo } });
                 handleCallStreamFlow(activeCallSession, wantVideo);
             } catch(err) {
                 console.error("Failed to capture local hardware stream context:", err);
@@ -418,32 +456,21 @@
         }
 
         async function acceptIncomingCall() {
+            isInActiveCall = true;
             try {
                 if (localStream && !isUpgradingCall) {
                     localStream.getTracks().forEach(track => track.stop());
                 }
-                
-                // HIGH QUALITY LAYER: Embedded explicit constraints ensuring ideal high-fidelity 720p/HD parameters on acceptance operations
-                localStream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: currentCallIsVideo ? {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: "user"
-                    } : false
-                });
-
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: currentCallIsVideo });
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
-
                 if(currentCallIsVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('localVideo').srcObject = localStream;
                 }
-
                 activeCallSession.answer(localStream);
                 handleCallStreamFlow(activeCallSession, currentCallIsVideo);
-                isUpgradingCall = false; 
+                isUpgradingCall = false;
             } catch(err) {
                 console.error("Error answering incoming media flow context:", err);
                 alert("Could not initialize device peripherals to answer call.");
@@ -456,7 +483,7 @@
                 document.getElementById('callStateTitle').innerText = "Call Active";
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
-                
+
                 if(isVideo || currentCallIsVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('remoteVideo').srcObject = remoteStream;
@@ -500,17 +527,7 @@
                     localStream.getTracks().forEach(t => t.stop());
                 }
                 currentCallIsVideo = true;
-                
-                // HIGH QUALITY LAYER: Forcing high bit-rate HD capabilities when upgrading audio channels mid-call session mappings
-                localStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: true, 
-                    video: {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        facingMode: "user"
-                    } 
-                });
-                
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
                 document.getElementById('videoGrid').style.display = 'block';
                 document.getElementById('localVideo').srcObject = localStream;
                 document.getElementById('callTypeSub').innerText = "Video Call Session";
@@ -519,6 +536,7 @@
                 if(activeCallSession) activeCallSession.close();
                 activeCallSession = peer.call(targetPeerId, localStream, { metadata: { video: true } });
                 handleCallStreamFlow(activeCallSession, true);
+
                 setTimeout(() => { isUpgradingCall = false; }, 1000);
             } catch(e) {
                 console.error(e);
@@ -527,35 +545,34 @@
         }
 
         function declineOrHangupCall() {
-            isUpgradingCall = false;
             if(conn) conn.send({type: 'call_decline'});
-            if(activeCallSession) {
-                activeCallSession.close();
-            }
             resetCallInterface();
         }
 
         function resetCallInterface() {
-            if (isUpgradingCall) return;
+            isInActiveCall = false; // Musik darf im Hintergrund wieder spielen
             document.getElementById('callOverlay').style.display = 'none';
+            document.getElementById('videoGrid').style.display = 'none';
+            
             if(localStream) {
                 localStream.getTracks().forEach(track => track.stop());
                 localStream = null;
             }
-            const audioNode = document.getElementById('hiddenRemoteAudio');
-            if(audioNode) audioNode.remove();
-            
+            if(activeCallSession) {
+                activeCallSession.close();
+                activeCallSession = null;
+            }
+            let audioNode = document.getElementById('hiddenRemoteAudio');
+            if(audioNode) {
+                audioNode.srcObject = null;
+            }
             myMicMuted = false;
             remoteAudioMuted = false;
             myCamMuted = false;
-            currentCallIsVideo = false;
             document.getElementById('muteMeBtn').classList.remove('muted-active');
             document.getElementById('muteFriendBtn').classList.remove('muted-active');
             document.getElementById('toggleCamBtn').classList.remove('muted-active');
-            document.getElementById('remoteVideo').srcObject = null;
-            document.getElementById('localVideo').srcObject = null;
-            
-            setMusicSuppressionState(false); // Restore background music execution tracking layers safely
+            isUpgradingCall = false;
         }
 
         function toggleMuteMe() {
@@ -567,15 +584,15 @@
 
         function toggleMuteFriend() {
             remoteAudioMuted = !remoteAudioMuted;
-            const remoteVideoEl = document.getElementById('remoteVideo');
-            const hiddenAudioEl = document.getElementById('hiddenRemoteAudio');
-            if(remoteVideoEl) remoteVideoEl.muted = remoteAudioMuted;
-            if(hiddenAudioEl) hiddenAudioEl.muted = remoteAudioMuted;
             document.getElementById('muteFriendBtn').classList.toggle('muted-active', remoteAudioMuted);
+            let audioNode = document.getElementById('hiddenRemoteAudio');
+            if(audioNode) audioNode.muted = remoteAudioMuted;
+            let videoNode = document.getElementById('remoteVideo');
+            if(videoNode) videoNode.muted = remoteAudioMuted;
         }
 
         function toggleCamera() {
-            if(!localStream || localStream.getVideoTracks().length === 0) return;
+            if(!localStream) return;
             myCamMuted = !myCamMuted;
             localStream.getVideoTracks().forEach(t => t.enabled = !myCamMuted);
             document.getElementById('toggleCamBtn').classList.toggle('muted-active', myCamMuted);
@@ -586,327 +603,201 @@
             pop.style.display = (pop.style.display === 'flex') ? 'none' : 'flex';
         }
 
-        function triggerFileInput(type) {
+        function triggerFileInput(idPrefix) {
             document.getElementById('sharePopover').style.display = 'none';
-            if(type === 'file') document.getElementById('genericFileInput').click();
-            if(type === 'gallery') document.getElementById('galleryFileInput').click();
-            if(type === 'camera') document.getElementById('cameraFileInput').click();
+            if(idPrefix === 'file') document.getElementById('genericFileInput').click();
+            if(idPrefix === 'gallery') document.getElementById('galleryFileInput').click();
+            if(idPrefix === 'camera') document.getElementById('cameraFileInput').click();
         }
 
-        function handleFileTransmission(inputEl, contextMode) {
-            const file = inputEl.files[0];
+        function handleFileTransmission(inputElement, contextMode) {
+            const file = inputElement.files[0];
             if(!file || !conn) return;
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const payload = {
+                const rawBuffer = e.target.result;
+                const base64String = btoa(
+                    new Uint8Array(rawBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+                );
+
+                const packet = {
                     type: 'media',
                     mime: file.type,
                     name: file.name,
-                    dataUrl: e.target.result
+                    payload: base64String,
+                    ctx: contextMode
                 };
-                conn.send(payload);
-                addMediaMessage('You', payload);
-                showBubble('You', "[Media Attachment]");
+
+                conn.send(packet);
+                addMediaMessage('You', packet);
+                showBubble('You', "Uploaded file");
             };
-            reader.readAsDataURL(file);
-            inputEl.value = '';
+            reader.readAsArrayBuffer(file);
+            inputElement.value = ""; 
         }
 
-        function addMediaMessage(sender, payload) {
+        function addMediaMessage(sender, packet) {
             const div = document.getElementById('messages');
-            let contentMarker = '';
+            const elementWrapper = document.createElement('div');
+            elementWrapper.innerHTML = `<b>${sender}:</b> `;
 
-            // NEW Compact layout integration injecting fullscreen Lightbox callbacks upon click events
-            if(payload.mime.startsWith('image/')) {
-                contentMarker = `<img src="${payload.dataUrl}" alt="shared image" onclick="openLightbox('${payload.dataUrl}', 'image')"/>`;
-            } else if(payload.mime.startsWith('video/')) {
-                contentMarker = `<video src="${payload.dataUrl}" onclick="openLightbox('${payload.dataUrl}', 'video')" preload="metadata"></video>`;
-            } else if(payload.mime.startsWith('audio/')) {
-                // Attached native browser events to dynamically pause/resume chill music nodes depending on operational state 
-                contentMarker = `<audio src="${payload.dataUrl}" controls onplay="setMusicSuppressionState(true)" onpause="setMusicSuppressionState(false)" onended="setMusicSuppressionState(false)"></audio>`;
+            const rawBinary = atob(packet.payload);
+            const arrayBytes = new Uint8Array(rawBinary.length);
+            for (let i = 0; i < rawBinary.length; i++) {
+                arrayBytes[i] = rawBinary.charCodeAt(i);
+            }
+            const blobObj = new Blob([arrayBytes], { type: packet.mime });
+            const localBlobUrl = URL.createObjectURL(blobObj);
+
+            if(packet.mime.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = localBlobUrl;
+                elementWrapper.appendChild(img);
+            } else if(packet.mime.startsWith('video/')) {
+                const vid = document.createElement('video');
+                vid.src = localBlobUrl;
+                vid.controls = true;
+                
+                // Track Musik Stopp Hooks bei Video-Wiedergabe
+                vid.addEventListener('play', handleMediaPlaybackStarted);
+                vid.addEventListener('pause', handleMediaPlaybackEnded);
+                vid.addEventListener('ended', handleMediaPlaybackEnded);
+                
+                elementWrapper.appendChild(vid);
+            } else if(packet.mime.startsWith('audio/')) {
+                const aud = document.createElement('audio');
+                aud.src = localBlobUrl;
+                aud.controls = true;
+                
+                // Track Musik Stopp Hooks bei Audio-Wiedergabe
+                aud.addEventListener('play', handleMediaPlaybackStarted);
+                aud.addEventListener('pause', handleMediaPlaybackEnded);
+                aud.addEventListener('ended', handleMediaPlaybackEnded);
+                
+                elementWrapper.appendChild(aud);
             } else {
-                contentMarker = `<a href="${payload.dataUrl}" download="${payload.name}" class="file-link">📁 Download ${payload.name}</a>`;
+                const link = document.createElement('a');
+                link.href = localBlobUrl;
+                link.download = packet.name;
+                link.className = 'file-link';
+                link.innerText = `📄 Download ${packet.name}`;
+                elementWrapper.appendChild(link);
             }
 
-            div.innerHTML += `<div><b>${sender}:</b> ${contentMarker}</div>`;
+            div.appendChild(elementWrapper);
             div.scrollTop = div.scrollHeight;
         }
 
-        // NEW Immersive Viewport Lightbox orchestration logic handling high-quality localized full-screen scaling
-        function openLightbox(sourceUrl, fileType) {
-            const overlay = document.getElementById('lightboxOverlay');
-            const container = document.getElementById('lightboxContainer');
-            
-            setMusicSuppressionState(true); // Automatically freeze underlying soundtrack elements locally
-
-            if (fileType === 'image') {
-                container.innerHTML = `<img src="${sourceUrl}" alt="Lightbox media content frame layer">`;
-            } else if (fileType === 'video') {
-                container.innerHTML = `<video src="${sourceUrl}" controls autoplay playsinline style="width:100%; max-height:80vh;"></video>`;
-            }
-            overlay.style.display = 'flex';
-        }
-
-        function closeLightbox() {
-            const container = document.getElementById('lightboxContainer');
-            
-            // Stop any playing instance safely inside the media frame element layout mappings before detachment
-            const videoEl = container.querySelector('video');
-            if(videoEl) videoEl.pause();
-            
-            document.getElementById('lightboxOverlay').style.display = 'none';
-            container.innerHTML = '';
-            
-            setMusicSuppressionState(false); // Unmute and resume background audio parameters safely
-        }
-
-        async function toggleVoiceRecording() {
-            const recBtn = document.getElementById('voiceRecBtn');
-            const timerDisplay = document.getElementById('recTimerDisplay');
-            
-            if(!isVoiceRecording) {
-                try {
-                    const recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    voiceAudioChunks = [];
-                    mediaRecorder = new MediaRecorder(recStream);
-                    
-                    mediaRecorder.ondataavailable = e => {
-                        if (e.data.size > 0) voiceAudioChunks.push(e.data);
-                    };
-
-                    mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            if(conn) {
-                                const payload = {
-                                    type: 'media',
-                                    mime: 'audio/webm',
-                                    name: 'voice_message.webm',
-                                    dataUrl: e.target.result
-                                };
-                                conn.send(payload);
-                                addMediaMessage('You', payload);
-                                showBubble('You', "[Voice Note]");
-                            }
-                        };
-                        reader.readAsDataURL(audioBlob);
-                        recStream.getTracks().forEach(t => t.stop());
-                    };
-
-                    // NEW Dynamic counting live recording timer routine
-                    voiceRecSeconds = 0;
-                    timerDisplay.innerText = "0:00";
-                    timerDisplay.style.display = "block";
-                    
-                    voiceRecTimerInterval = setInterval(() => {
-                        voiceRecSeconds++;
-                        const mins = Math.floor(voiceRecSeconds / 60);
-                        const secs = voiceRecSeconds % 60;
-                        timerDisplay.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-                    }, 1000);
-
-                    mediaRecorder.start();
-                    isVoiceRecording = true;
-                    recBtn.classList.add('active-rec');
-                } catch(err) {
-                    console.error("Audio capture session error context:", err);
-                    alert("Could not initialize microphone hardware routing mapping layer.");
-                }
-            } else {
-                // Clear active running recording interval timers safely
-                if(voiceRecTimerInterval) {
-                    clearInterval(voiceRecTimerInterval);
-                    voiceRecTimerInterval = null;
-                }
-                timerDisplay.style.display = "none";
-
-                if(mediaRecorder && mediaRecorder.state !== 'inactive') {
-                    mediaRecorder.stop();
-                }
-                isVoiceRecording = false;
-                recBtn.classList.remove('active-rec');
-            }
-        }
-
-        function joinRoom(shouldSendSignal) {
-            if (shouldSendSignal && conn) {
+        function joinRoom(isInitiator) {
+            if(isInitiator && conn) {
                 conn.send('JOIN_ROOM');
             }
-            scene.remove(cube);
-            startChillMusic();
-            const floorMat = new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.7});
-            const floor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 10), floorMat);
-            floor.position.y = -0.1;
-            scene.add(floor);
-
-            const carpetMat = new THREE.MeshStandardMaterial({color: 0x990000, roughness: 0.9});
-            const carpet = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.02, 3.5), carpetMat);
-            carpet.position.set(0, 0.01, 0);
-            scene.add(carpet);
-
-            const wallMat = new THREE.MeshStandardMaterial({color: 0xe67e22, roughness: 0.6});
-            const backWall = new THREE.Mesh(new THREE.BoxGeometry(12, 6, 0.2), wallMat);
-            backWall.position.set(0, 3, -5);
-            scene.add(backWall);
             
-            const skyMat = new THREE.MeshBasicMaterial({color: 0x5dade2});
-            const sky = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), skyMat);
-            sky.position.set(0, 3.5, -4.95);
-            scene.add(sky);
-
-            const windowGroup = new THREE.Group();
-            windowGroup.position.set(0, 3.5, -4.9);
-            const glassMat = new THREE.MeshStandardMaterial({color: 0xffffff, transparent: true, opacity: 0.3, roughness: 0.1});
-            const glass = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), glassMat);
-            windowGroup.add(glass);
-
-            const frameMat = new THREE.MeshStandardMaterial({color: 0xffffff});
-            const borderTopBot = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), frameMat); borderTopBot.position.set(0, 1, 0); windowGroup.add(borderTopBot);
-            const borderTopBot2 = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), frameMat); borderTopBot2.position.set(0, -1, 0); windowGroup.add(borderTopBot2);
-            const borderLeftRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight.position.set(1.5, 0, 0); windowGroup.add(borderLeftRight);
-            const borderLeftRight2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight2.position.set(-1.5, 0, 0); windowGroup.add(borderLeftRight2);
-            const horizBar = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 0.1), frameMat); windowGroup.add(horizBar);
-            const vertBar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2, 0.1), frameMat); windowGroup.add(vertBar);
-            scene.add(windowGroup);
-
-            const lampGroup = new THREE.Group();
-            lampGroup.position.set(0, 6, 0);
-
-            const wireMat = new THREE.MeshBasicMaterial({color: 0x111111});
-            const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.8), wireMat); wire.position.y = -0.9; lampGroup.add(wire);
-
-            const bulbMat = new THREE.MeshBasicMaterial({color: 0xfff2cc});
-            const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), bulbMat); bulb.position.y = -1.8; lampGroup.add(bulb);
-            scene.add(lampGroup);
-            const spotLight = new THREE.SpotLight(0xfff2cc, 3.5, 10, Math.PI / 4, 0.5, 1);
-            spotLight.position.set(0, 4.2, 0);
-            spotLight.target.position.set(0, 0, 0);
-            scene.add(spotLight);
-            scene.add(spotLight.target);
-            const table = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 1.8), new THREE.MeshStandardMaterial({color: 0x4a2c11, roughness: 0.5}));
-            table.position.set(0, 0.3, 0);
-            scene.add(table);
-
-            camera.position.set(0, 3.5, 6.5);
-            camera.lookAt(0, 0.8, 0);
-
-            let p1LabelText = isHost ? "You" : "Friend";
-            let p2LabelText = isHost ? "Friend" : "You";
-            player1Mesh = createCharacter(0x0055ff);
-            player1Mesh.position.set(-2.3, 0.5, 0);
-            player1Mesh.lookAt(0, 0.5, 0);
-            
-            const p1Label = createLabel(p1LabelText); p1Label.position.y = 0.85; player1Mesh.add(p1Label);
-            scene.add(player1Mesh);
-            player2Mesh = createCharacter(0xff2233);
-            player2Mesh.position.set(2.3, 0.5, 0);
-            player2Mesh.lookAt(0, 0.5, 0);
-            
-            const p2Label = createLabel(p2LabelText); p2Label.position.y = 0.85; player2Mesh.add(p2Label);
-            scene.add(player2Mesh);
             document.getElementById('ui').style.display = 'none';
             document.getElementById('chatBox').style.display = 'flex';
+            
+            if(cube) scene.remove(cube);
+
+            player1Mesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.4, 0.4, 1, 16),
+                new THREE.MeshStandardMaterial({ color: 0x00fff0, roughness: 0.3 })
+            );
+            player1Mesh.position.set(-1.2, 0.5, 0);
+            scene.add(player1Mesh);
+
+            player2Mesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.4, 0.4, 1, 16),
+                new THREE.MeshStandardMaterial({ color: 0xff007f, roughness: 0.3 })
+            );
+            player2Mesh.position.set(1.2, 0.5, 0);
+            scene.add(player2Mesh);
+
+            const label1 = createLabel(isHost ? 'You' : 'Friend', false);
+            label1.position.y = 0.8;
+            player1Mesh.add(label1);
+
+            const label2 = createLabel(isHost ? 'Friend' : 'You', false);
+            label2.position.y = 0.8;
+            player2Mesh.add(label2);
+
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(12, 12),
+                new THREE.MeshStandardMaterial({ color: 0x332211, roughness: 0.8 })
+            );
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = 0;
+            scene.add(floor);
+
+            startChillMusic();
         }
 
-        // Texture rendering support engine interface mapping layer tracking operations
-        function createLabel(text, isBubble = false) {
+        function createLabel(text, isBubble) {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
             canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            drawLabelOnCanvas(canvas, ctx, text, isBubble);
             
-            const texture = new THREE.CanvasTexture(canvas);
-            const spriteMat = new THREE.SpriteMaterial({ map: texture });
-            const sprite = new THREE.Sprite(spriteMat);
-            sprite.scale.set(2.5, 0.6, 1);
-            
-            // Expose background canvas handlers directly onto the object references for dynamic typewriter rendering loops
-            sprite.associatedCanvas = canvas;
-            sprite.associatedContext = ctx;
-            sprite.associatedTexture = texture;
-            return sprite;
-        }
-
-        // Abstracted drawing layer isolation enabling live real-time canvas updates
-        function drawLabelOnCanvas(canvas, ctx, text, isBubble) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             if(isBubble) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.fillStyle = 'rgba(0, 255, 240, 0.85)';
                 ctx.roundRect(10, 10, 492, 108, 20);
                 ctx.fill();
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#00fff0';
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#ffffff';
                 ctx.stroke();
-                ctx.font = 'bold 22px Arial';
-                ctx.fillStyle = '#111111';
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 36px Arial';
             } else {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                ctx.roundRect(100, 30, 312, 68, 12);
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.roundRect(60, 20, 392, 88, 12);
                 ctx.fill();
-                ctx.font = 'bold 28px Arial';
                 ctx.fillStyle = '#ffffff';
+                ctx.font = '32px Arial';
             }
             
             ctx.textAlign = 'center';
-            
-            // Truncation rules safeguarding bounds during large text streams
-            let renderedText = text;
-            if(isBubble && renderedText.length > 30) {
-                renderedText = renderedText.substring(0, 27) + "...";
-            }
-            ctx.fillText(renderedText, 256, 74);
-        }
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 256, 64);
 
-        function createCharacter(color) {
-            const group = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshStandardMaterial({color: color, roughness: 0.3}));
-            group.add(body);
-            
-            const eyeMat = new THREE.MeshBasicMaterial({color: 0xffffff});
-            const pupilMat = new THREE.MeshBasicMaterial({color: 0x000000});
-            const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
-            
-            const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-            leftEye.position.set(-0.18, 0.15, 0.42);
-            const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.18, 0.15, 0.42);
-            const leftPupil = new THREE.Mesh(eyeGeo, pupilMat); leftPupil.scale.set(0.5,0.5,0.5);
-            leftPupil.position.set(-0.18, 0.15, 0.48);
-            const rightPupil = new THREE.Mesh(eyeGeo, pupilMat); rightPupil.scale.set(0.5,0.5,0.5); rightPupil.position.set(0.18, 0.15, 0.48);
-            
-            group.add(leftEye, rightEye, leftPupil, rightPupil);
-            return group;
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(1.8, 0.45, 1);
+            return sprite;
         }
 
         const chatInput = document.getElementById('chatInput');
-        chatInput.addEventListener('input', () => {
-            if (conn) {
-                conn.send({type: 'typing', text: chatInput.value.length > 0});
+        chatInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const text = chatInput.value.trim();
+                if (!text) return;
+                
+                if (conn) {
+                    conn.send({ type: 'chat', text: text });
+                    conn.send({ type: 'typing', text: false });
+                }
+                
+                addMessage('You', text);
+                showBubble('You', text);
+                chatInput.value = '';
+            } else {
+                if (conn) conn.send({ type: 'typing', text: true });
             }
         });
-        chatInput.onkeypress = (e) => {
-            if (e.key === 'Enter' && conn) {
-                const msg = chatInput.value;
-                if(!msg.trim()) return;
-                
-                conn.send({type: 'chat', text: msg});
-                addMessage('You', msg);
-                showBubble('You', msg); // Passes real message array into typewriter pipeline
-                
-                chatInput.value = '';
-                conn.send({type: 'typing', text: false});
-            }
-        };
+
+        chatInput.addEventListener('blur', () => {
+            if (conn) conn.send({ type: 'typing', text: false });
+        });
 
         function addMessage(sender, text) {
             const div = document.getElementById('messages');
             div.innerHTML += `<div><b>${sender}:</b> ${text}</div>`;
             div.scrollTop = div.scrollHeight;
+            
+            // Animal Crossing Stimme wird hier getriggert
+            speakAnimalCrossing(text);
         }
 
-        // NEW Animal Crossing Typewriter Sprechblasen Rendering-Engine (15 Sekunden State)
         function showBubble(target, text) {
             let activeMesh = null;
             if(target === 'You') {
@@ -916,51 +807,80 @@
             }
             if(!activeMesh) return;
             
-            // Clean up any existing intervals or residual bubbles attached to this active peer group context safely
-            if(activeMesh.typewriterInterval) clearInterval(activeMesh.typewriterInterval);
-            if(activeMesh.bubbleLifespanTimeout) clearTimeout(activeMesh.bubbleLifespanTimeout);
-            
             activeMesh.children.forEach(child => {
                 if(child.isBubbleSprite) activeMesh.remove(child);
             });
-
-            // Instantiate overhead sprite with blank initialization states
-            const bubbleSprite = createLabel("", true);
+            
+            const bubbleSprite = createLabel(text, true);
             bubbleSprite.position.y = 1.4; 
             bubbleSprite.isBubbleSprite = true;
             activeMesh.add(bubbleSprite);
-
-            let currentStringIndex = 0;
-            let animatedStringAccumulator = "";
             
-            // Fast-paced typewriter sequence mimicking native Animal Crossing dialogues (approx 35ms per frame update)
-            activeMesh.typewriterInterval = setInterval(() => {
-                if(currentStringIndex < text.length) {
-                    animatedStringAccumulator += text[currentStringIndex];
+            setTimeout(() => {
+                activeMesh.remove(bubbleSprite);
+            }, 5000);
+        }
+
+        async function toggleVoiceRecording() {
+            const recBtn = document.getElementById('voiceRecBtn');
+            if(!isVoiceRecording) {
+                if(!targetPeerId) return alert("Connect to a peer first.");
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    voiceAudioChunks = [];
                     
-                    // Re-render sub-content layout layers directly onto textures dynamically
-                    drawLabelOnCanvas(bubbleSprite.associatedCanvas, bubbleSprite.associatedContext, animatedStringAccumulator, true);
-                    bubbleSprite.associatedTexture.needsUpdate = true;
-                    
-                    playAnimalSoundCharacter(); // Trigger non-blocking real-time synthetic chiptune voice node blips
-                    currentStringIndex++;
-                } else {
-                    clearInterval(activeMesh.typewriterInterval);
-                    
-                    // NEW: Persistent 15-second lifespan visibility lock on completion of text animation cycles
-                    activeMesh.bubbleLifespanTimeout = setTimeout(() => {
-                        activeMesh.remove(bubbleSprite);
-                    }, 15000);
+                    mediaRecorder.ondataavailable = e => {
+                        if(e.data.size > 0) voiceAudioChunks.push(e.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const base64String = btoa(
+                                new Uint8Array(e.target.result).reduce((data, byte) => data + String.fromCharCode(byte), '')
+                            );
+                            const packet = {
+                                type: 'media',
+                                mime: 'audio/webm',
+                                name: 'VoiceNote.webm',
+                                payload: base64String,
+                                ctx: 'voice'
+                            };
+                            if(conn) conn.send(packet);
+                            addMediaMessage('You', packet);
+                            showBubble('You', "🎤 Voice Note");
+                        };
+                        reader.readAsArrayBuffer(audioBlob);
+                        
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    isVoiceRecording = true;
+                    recBtn.classList.add('active-rec');
+                    recBtn.innerText = "🛑";
+                } catch(err) {
+                    alert("Could not access microphone infrastructure.");
                 }
-            }, 35);
+            } else {
+                if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                isVoiceRecording = false;
+                recBtn.classList.remove('active-rec');
+                recBtn.innerText = "🎙";
+            }
         }
 
         window.addEventListener('click', (e) => {
             const pop = document.getElementById('sharePopover');
-            if(e.target.innerText && !e.target.innerText.includes('➕') && pop.style.display === 'flex') {
+            if(!e.target.innerText.includes('➕') && pop.style.display === 'flex') {
                 pop.style.display = 'none';
             }
         });
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
