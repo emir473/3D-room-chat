@@ -36,9 +36,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script>
-        // WEB AUDIO API SYNTHESIZER SETUP
+        // WEB AUDIO API SYNTHESIZER SETUP FOR GUARANTEED AUDIO
         let audioCtx = null;
-        let bgInterval = null;
+        let bgTimeout = null;
 
         function initAudio() {
             if (!audioCtx) {
@@ -49,7 +49,7 @@
             }
         }
 
-        // Klingeln / Pling bei eingehender Nachricht
+        // Clean synth message notification sound (Pling-Pop)
         function playMessageSound() {
             try {
                 initAudio();
@@ -57,10 +57,10 @@
                 const gain = audioCtx.createGain();
                 
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); 
-                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1); 
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1); // A5
                 
-                gain.gain.setValueAtTime(0.4, audioCtx.currentTime); // Sound etwas kräftiger
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
                 
                 osc.connect(gain);
@@ -71,61 +71,45 @@
             } catch(e) { console.log(e); }
         }
 
-        // Neue, bessere Melodie-Logik mit tiefer Vibe-Frequenz und höherer Lautstärke
+        // Verbesserter Musik-Generator: Lauter, leicht höhere Frequenz & abwechslungsreicher Rhythmus
         function startChillMusic() {
             try {
                 initAudio();
+                // Erweiterte pentatonische Skala für mehr Melodie-Abwechslung
+                const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33]; 
                 
-                // Schöne Akkord-Frequenzen (eine Oktave tiefer für die perfekte Tiefe)
-                // Kombinationen aus Am, F, C, G Vibe-Noten
-                const chords = [
-                    [220.00, 261.63, 329.63], // A-Moll Vibe
-                    [174.61, 261.63, 349.23], // F-Dur Vibe
-                    [261.63, 329.63, 392.00], // C-Dur Vibe
-                    [196.00, 293.66, 392.00]  // G-Dur Vibe
-                ];
-                let chordIndex = 0;
+                function playNextNote() {
+                    if (!audioCtx) return;
+                    
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    // Wählt eine zufällige Note aus der erweiterten Liste
+                    const randomNote = notes[Math.floor(Math.random() * notes.length)];
+                    osc.type = 'sine';
+                    
+                    // Leicht höher eingestellt (Originalfrequenz ohne Division)
+                    osc.frequency.setValueAtTime(randomNote, audioCtx.currentTime); 
+                    
+                    gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+                    // DEUTLICH LAUTER: Auf 0.35 angehoben für optimalen Sound auf Stufe 1
+                    gain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 0.4); 
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.8); 
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 3.0);
+                    
+                    // MEHR ABWECHSLUNG: Zufällige Taktpausen zwischen 1,2 und 2,8 Sekunden
+                    const randomDelay = Math.floor(Math.random() * 1600) + 1200;
+                    bgTimeout = setTimeout(playNextNote, randomDelay);
+                }
                 
-                bgInterval = setInterval(() => {
-                    if (!audioCtx || audioCtx.state === 'suspended') return;
-                    
-                    // Wähle den aktuellen Akkord und wechsle ihn für eine echte Song-Struktur ab
-                    const currentChord = chords[chordIndex];
-                    chordIndex = (chordIndex + 1) % chords.length;
-                    
-                    // Spiele alle 3 Noten des Akkords gleichzeitig für einen fetten Sound
-                    currentChord.forEach((note, i) => {
-                        const osc = audioCtx.createOscillator();
-                        const gain = audioCtx.createGain();
-                        
-                        osc.type = 'sine';
-                        // Getroffene Note wird leicht zeitversetzt (Arpeggio) und tief abgespielt
-                        osc.frequency.setValueAtTime(note / 2, audioCtx.currentTime + (i * 0.15)); 
-                        
-                        gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
-                        // LAUTSTÄRKE ERHÖHT: von 0.06 auf 0.25 erhöht, damit es auf Stufe 1 gut hörbar ist!
-                        gain.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 0.6); 
-                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.5); 
-                        
-                        osc.connect(gain);
-                        gain.connect(audioCtx.destination);
-                        
-                        osc.start();
-                        osc.stop(audioCtx.currentTime + 3.8);
-                    });
-                    
-                }, 3000); // Alle 3 Sekunden wechselt die Hintergrund-Harmonie
+                playNextNote();
             } catch(e) { console.log(e); }
         }
-
-        // Automatisches Einfrieren / Pausieren, wenn der Tab gewechselt wird
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden && audioCtx) {
-                audioCtx.suspend();
-            } else if (!document.hidden && audioCtx) {
-                audioCtx.resume();
-            }
-        });
 
         // 1. 3D WORLD & LIVING ROOM SETUP
         const scene = new THREE.Scene();
