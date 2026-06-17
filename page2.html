@@ -1,45 +1,76 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Info & Hilfe</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Info & Help</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* Extra Fix, damit der Text auf der Info-Seite perfekt lesbar und weiß ist */
+        /* Modern container for professional, high-contrast readability */
         main {
             color: #ffffff;
-            max-width: 600px;
-            margin: 40px auto;
-            background: rgba(20, 20, 20, 0.6);
-            padding: 25px;
+            max-width: 650px;
+            margin: 80px auto 40px auto;
+            background: rgba(20, 20, 20, 0.85);
+            padding: 30px;
             border-radius: 12px;
-            border: 1px solid #444;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 1px solid #00fff0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         h1 {
-            color: #00fff0; /* Überschrift leuchtet passend in Neon-Blau */
+            color: #00fff0; /* Bright cyberpunk neon cyan color theme */
             margin-top: 0;
             border-bottom: 2px solid #333;
-            padding-bottom: 10px;
+            padding-bottom: 12px;
+            font-size: 1.8rem;
         }
-        p {
-            font-size: 16px;
+        h2 {
+            color: #ffffff;
+            font-size: 1.2rem;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+        p, ul {
+            font-size: 15px;
             line-height: 1.6;
             color: #e0e0e0;
+        }
+        ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        b {
+            color: #00fff0;
         }
     </style>
 </head>
 <body>
     <nav>
-        <a href="index.html">Startseite / Chat</a>
-        <a href="page2.html" aria-current="page">Info & Hilfe</a>
+        <a href="index.html">Home / Chat Space</a>
+        <a href="page2.html" aria-current="page">Info & Help</a>
     </nav>
     <main>
-        <h1>Willkommen bei deinem 3D-Chat!</h1>
-        <p>Hier kannst du dich mit Freunden verbinden.</p>
-        <p><b>1.</b> Kopiere deine ID von der Startseite.</p>
-        <p><b>2.</b> Schicke sie deinem Freund.</p>
-        <p><b>3.</b> Wenn ihr verbunden seid, klickt auf „Join 3D Chatting Server“!</p>
+        <h1>Welcome to your 3D Multimedia Space!</h1>
+        <p>Connect instantly with your friends in real-time using high-end interactive systems.</p>
+        
+        <h2>How to Connect & Start</h2>
+        <p><b>1.</b> Copy your generated 6-digit ID on the main page dashboard.</p>
+        <p><b>2.</b> Share this ID directly with your friend via any external channel.</p>
+        <p><b>3.</b> Paste your friend's ID into the text field and click <b>Connect</b>.</p>
+        <p><b>4.</b> Once established, tap <b>Join 3D Room</b> to activate the interactive simulation environment!</p>
+
+        <h2>Features & Controls Guide</h2>
+        <ul>
+            <li><b>Calling System (Top-Right):</b> Tap the phone receiver icon 📞 for a crisp Voice Call, or the camera icon 📹 for an HD Video Call. When called, a full-screen notification popup layout will allow you to <b>Accept</b> or <b>Decline</b> the session.</li>
+            <li><b>In-Call Dashboard:</b> During an active call, you can easily toggle your camera, mute your microphone, mute your friend's sound, or instantly end the session with the <b>Hang Up</b> action button.</li>
+            <li><b>iPad-Style Attachment Tool (Bottom-Left):</b> Tap the ➕ button right beside the chat box to choose between uploading generic files, browsing your media gallery, or activating your camera hardware directly to snap photos and capture videos.</li>
+            <li><b>Voice Messages (Bottom-Right):</b> Tap or hold the microphone icon 🎙 right next to the message line to dynamically record voice notes and stream them straight into the shared text stream history as HTML5 playbacks.</li>
+        </ul>
     </main>
 </body>
 </html>
