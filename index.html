@@ -1,48 +1,62 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>3D Multiplayer Chat Room</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #111; font-family: sans-serif; }
-        #ui { position: absolute; top: 10px; left: 10px; width: 300px; background: rgba(0,0,0,0.9); color: white; padding: 15px; border-radius: 8px; border: 2px solid #00ff00; z-index: 100; }
-        #joinBtn { display: none; width: 100%; padding: 10px; background: #00ff00; border: none; font-weight: bold; margin-top: 10px; cursor: pointer; color: black; }
-        input, button { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
-        #chatBox { position: absolute; bottom: 20px; left: 20px; width: 320px; height: 240px; background: rgba(0,0,0,0.8); border: 1px solid #555; border-radius: 6px; display: none; flex-direction: column; padding: 10px; z-index: 100; color: white; }
-        #messages { flex: 1; overflow-y: auto; font-size: 14px; margin-bottom: 5px; padding-right: 5px; }
-        #chatInput { width: 100%; padding: 6px; background: #222; border: 1px solid #444; color: white; border-radius: 4px; }
-        #typing { font-size: 12px; color: #aaa; height: 15px; margin-bottom: 2px; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #ui { position: absolute; top: 15px; left: 15px; width: 280px; background: rgba(20, 20, 20, 0.85); color: white; padding: 20px; border-radius: 12px; border: 2px solid #00fff0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
+        #joinBtn { display: none; width: 100%; padding: 12px; background: #00fff0; border: none; font-weight: bold; margin-top: 12px; cursor: pointer; color: black; border-radius: 6px; font-size: 14px; transition: 0.2s; }
+        #joinBtn:hover { background: #00cccc; }
+        input, button { width: 100%; padding: 10px; margin-top: 8px; box-sizing: border-box; border-radius: 6px; border: none; font-size: 14px; }
+        input[type="text"] { background: #333; color: white; border: 1px solid #555; }
+        button { background: #00fff0; color: black; font-weight: bold; cursor: pointer; }
+        #chatBox { position: absolute; bottom: 20px; left: 20px; width: 300px; height: 220px; background: rgba(20, 20, 20, 0.85); border: 1px solid #444; border-radius: 10px; display: none; flex-direction: column; padding: 12px; z-index: 100; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
+        #messages { flex: 1; overflow-y: auto; font-size: 14px; margin-bottom: 8px; padding-right: 5px; }
+        #chatInput { width: 100%; padding: 8px; background: #333; border: 1px solid #555; color: white; border-radius: 6px; box-sizing: border-box; }
+        #typing { font-size: 12px; color: #00fff0; height: 15px; margin-bottom: 4px; font-style: italic; }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <div id="status">Lade...</div>
-        <input type="text" id="peerId" placeholder="ID des Freundes">
-        <button onclick="connect()">Verbinden</button>
-        <button id="joinBtn" onclick="joinRoom(true)">Join 3D Chatting Server &#128172;</button>
+        <div id="status">Generating ID...</div>
+        <input type="text" id="peerId" placeholder="Friend's 6-Digit ID">
+        <button onclick="connect()">Connect</button>
+        <button id="joinBtn" onclick="joinRoom(true)">Join 3D Room &#128172;</button>
     </div>
 
     <div id="chatBox">
         <div id="messages"></div>
         <div id="typing"></div>
-        <input type="text" id="chatInput" placeholder="Nachricht eingeben... (Enter drücken)">
+        <input type="text" id="chatInput" placeholder="Type a message... (Press Enter)">
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script>
-        // 1. 3D WELT SETUP
+        // 1. 3D WORLD & LIVING ROOM SETUP
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        scene.background = new THREE.Color(0xf3e9dc); // Cozy wall color
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Start-Objekt: Rotierender grüner Würfel
-        const cube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({color: 0x00ff00, wireframe: true}));
+        // Lights (Cozy living room atmosphere)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        
+        const warmLight = new THREE.DirectionalLight(0xffeacc, 0.5);
+        warmLight.position.set(5, 8, 5);
+        scene.add(warmLight);
+
+        // Welcoming rotating preview cube
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({color: 0x00fff0, wireframe: true}));
         scene.add(cube);
-        camera.position.z = 5;
+        camera.position.z = 4;
 
         function animate() { 
             requestAnimationFrame(animate); 
@@ -54,18 +68,19 @@
         }
         animate();
 
-        // 2. NETZWERK (PEERJS) LOGIK
-        const peer = new Peer();
+        // 2. NETWORK (PEERJS) LOGIC WITH SHORT 6-DIGIT IDS
+        const shortId = Math.floor(100000 + Math.random() * 900000).toString();
+        const peer = new Peer(shortId);
         let conn, isHost = false;
         
         peer.on('open', id => {
-            document.getElementById('status').innerText = 'Deine ID: ' + id;
+            document.getElementById('status').innerHTML = 'Your ID: <b style="color:#00fff0; font-size:16px;">' + id + '</b>';
         });
 
         function connect() {
-            const id = document.getElementById('peerId').value;
-            if(!id) return alert("Bitte eine ID eingeben!");
-            document.getElementById('status').innerText = 'Verbinde...';
+            const id = document.getElementById('peerId').value.trim();
+            if(!id) return alert("Please enter a valid ID!");
+            document.getElementById('status').innerText = 'Connecting...';
             conn = peer.connect(id);
             isHost = false;
             setupConnection();
@@ -79,22 +94,79 @@
 
         function setupConnection() {
             conn.on('open', () => {
-                document.getElementById('status').innerText = 'Verbunden!';
+                document.getElementById('status').innerText = 'Connected!';
                 document.getElementById('joinBtn').style.display = 'block';
                 
                 conn.on('data', data => {
                     if (data === 'JOIN_ROOM') {
                         joinRoom(false);
                     } else if (data.type === 'chat') {
-                        addMessage('Freund: ' + data.text);
+                        addMessage('Friend', data.text);
+                        showBubble('Friend', data.text);
                     } else if (data.type === 'typing') {
-                        document.getElementById('typing').innerText = data.text ? 'Freund tippt...' : '';
+                        document.getElementById('typing').innerText = data.text ? 'Friend is typing...' : '';
                     }
                 });
             });
         }
 
-        // 3. 3D RAUM BETRETEN & CHAT ANZEIGEN
+        // 3. LIVING ROOM CREATION & VISUAL LABELS
+        let player1Mesh, player2Mesh;
+        let p1Bubble, p2Bubble;
+
+        function createLabel(text, isBubble = false) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            if(isBubble) {
+                // Speech bubble styles
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.roundRect(10, 10, 492, 108, 20);
+                ctx.fill();
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = '#111111';
+            } else {
+                // Name label styles
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.roundRect(100, 30, 312, 68, 12);
+                ctx.fill();
+                ctx.font = 'bold 28px Arial';
+                ctx.fillStyle = '#ffffff';
+            }
+            
+            ctx.textAlign = 'center';
+            ctx.fillText(text, 256, 74);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(2.5, 0.6, 1);
+            return sprite;
+        }
+
+        function createCharacter(color) {
+            const group = new THREE.Group();
+            
+            // Base sphere body
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshStandardMaterial({color: color, roughness: 0.3}));
+            group.add(body);
+            
+            // Cute eyes to show rotation/front facing side
+            const eyeMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+            const pupilMat = new THREE.MeshBasicMaterial({color: 0x000000});
+            const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
+            
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.18, 0.15, 0.42);
+            const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.18, 0.15, 0.42);
+            const leftPupil = new THREE.Mesh(eyeGeo, pupilMat); leftPupil.scale.set(0.5,0.5,0.5); leftPupil.position.set(-0.18, 0.15, 0.48);
+            const rightPupil = new THREE.Mesh(eyeGeo, pupilMat); rightPupil.scale.set(0.5,0.5,0.5); rightPupil.position.set(0.18, 0.15, 0.48);
+            
+            group.add(leftEye, rightEye, leftPupil, rightPupil);
+            return group;
+        }
+
         function joinRoom(shouldSendSignal) {
             if (shouldSendSignal && conn) {
                 conn.send('JOIN_ROOM');
@@ -102,28 +174,60 @@
 
             scene.remove(cube);
             
-            // Holztisch erstellen
-            const table = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 2), new THREE.MeshBasicMaterial({color: 0x8B4513}));
+            // 3D Living Room Floor (Wood Floor)
+            const floorMat = new THREE.MeshStandardMaterial({color: 0xbc8f8f, roughness: 0.6});
+            const floor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 10), floorMat);
+            floor.position.y = -0.1;
+            scene.add(floor);
+
+            // Living Room Back Wall
+            const wallMat = new THREE.MeshStandardMaterial({color: 0xd4a373});
+            const backWall = new THREE.Mesh(new THREE.BoxGeometry(12, 6, 0.2), wallMat);
+            backWall.position.set(0, 3, -5);
+            scene.add(backWall);
+            
+            // Little decorative window frame on back wall
+            const windowFrame = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 0.1), new THREE.MeshStandardMaterial({color: 0x4a3728}));
+            windowFrame.position.set(0, 3.5, -4.8);
+            scene.add(windowFrame);
+
+            // Wooden Coffee Table
+            const table = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 1.8), new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.5}));
+            table.position.set(0, 0.3, 0);
             scene.add(table);
 
-            // Kamera umstellen
-            camera.position.set(0, 3, 7);
-            camera.lookAt(0, 0, 0);
+            // Camera View Placement
+            camera.position.set(0, 3.5, 6.5);
+            camera.lookAt(0, 0.8, 0);
 
-            // Spieler spawnen
-            const player1 = new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshBasicMaterial({color: 0xff0000}));
-            player1.position.set(-1.5, 0.5, 0);
-            scene.add(player1);
+            // Dynamic Assignment of "You" and "Friend" based on roles
+            let p1LabelText = isHost ? "You" : "Friend";
+            let p2LabelText = isHost ? "Friend" : "You";
+            
+            // Spawn Avatars
+            player1Mesh = createCharacter(0x0055ff); // Blue Character
+            player1Mesh.position.set(-1.6, 0.5, 0);
+            player1Mesh.lookAt(1.6, 0.5, 0);
+            
+            const p1Label = createLabel(p1LabelText);
+            p1Label.position.y = 0.85;
+            player1Mesh.add(p1Label);
+            scene.add(player1Mesh);
 
-            const player2 = new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshBasicMaterial({color: 0x0000ff}));
-            player2.position.set(1.5, 0.5, 0);
-            scene.add(player2);
+            player2Mesh = createCharacter(0xff2233); // Red Character
+            player2Mesh.position.set(1.6, 0.5, 0);
+            player2Mesh.lookAt(-1.6, 0.5, 0);
+            
+            const p2Label = createLabel(p2LabelText);
+            p2Label.position.y = 0.85;
+            player2Mesh.add(p2Label);
+            scene.add(player2Mesh);
             
             document.getElementById('ui').style.display = 'none';
             document.getElementById('chatBox').style.display = 'flex';
         }
 
-        // 4. CHAT SYSTEM STEUERUNG
+        // 4. CHAT SYSTEM & TEMPORARY SPEECH BUBBLES
         const chatInput = document.getElementById('chatInput');
         
         chatInput.addEventListener('input', () => {
@@ -138,16 +242,46 @@
                 if(!msg.trim()) return;
                 
                 conn.send({type: 'chat', text: msg});
-                addMessage('Du: ' + msg);
+                addMessage('You', msg);
+                showBubble('You', msg);
+                
                 chatInput.value = '';
                 conn.send({type: 'typing', text: false});
             }
         };
 
-        function addMessage(msg) {
+        function addMessage(sender, text) {
             const div = document.getElementById('messages');
-            div.innerHTML += `<div>${msg}</div>`;
+            div.innerHTML += `<div><b>${sender}:</b> ${text}</div>`;
             div.scrollTop = div.scrollHeight;
+        }
+
+        function showBubble(target, text) {
+            // Determine who gets the popup
+            let activeMesh = null;
+            if(target === 'You') {
+                activeMesh = isHost ? player1Mesh : player2Mesh;
+            } else {
+                activeMesh = isHost ? player2Mesh : player1Mesh;
+            }
+            
+            if(!activeMesh) return;
+            
+            // Remove old bubble if exists
+            activeMesh.children.forEach(child => {
+                if(child.isBubbleSprite) activeMesh.remove(child);
+            });
+            
+            // Build the bubble text sprite
+            const bubbleSprite = createLabel(text, true);
+            bubbleSprite.position.y = 1.4; // Placed above the head label
+            bubbleSprite.isBubbleSprite = true;
+            activeMesh.add(bubbleSprite);
+            
+            // Delete bubble after exactly 4 seconds
+            setTimeout(() => {
+                activeMesh.remove(bubbleSprite);
+            }, 4000);
         }
 
         window.addEventListener('resize', () => {
