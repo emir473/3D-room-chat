@@ -20,9 +20,6 @@
 </head>
 <body>
 
-    <audio id="bgMusic" loop src="https://assets.mixkit.co/music/preview/mixkit-serene-view-1392.mp3"></audio>
-    <audio id="msgSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav"></audio>
-
     <div id="ui">
         <div id="status">Generating ID...</div>
         <input type="text" id="peerId" placeholder="Friend's 6-Digit ID">
@@ -39,6 +36,70 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script>
+        // WEB AUDIO API SYNTHESIZER SETUP FOR GUARANTEED AUDIO
+        let audioCtx = null;
+        let bgInterval = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Clean synth message notification sound (Pling-Pop)
+        function playMessageSound() {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                // Schnell ansteigender, klarer Ton (wie eine echte Chat-App)
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1); // A5
+                
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.25);
+            } catch(e) { console.log(e); }
+        }
+
+        // Live synthesizer logic for chill ambient music notes
+        function startChillMusic() {
+            try {
+                initAudio();
+                const notes = [261.63, 293.66, 329.63, 392.00, 440.00]; // Chill pentatonic notes (C, D, E, G, A)
+                
+                bgInterval = setInterval(() => {
+                    if (!audioCtx) return;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    const randomNote = notes[Math.floor(Math.random() * notes.length)];
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(randomNote / 2, audioCtx.currentTime); // Eine Oktave tiefer für soften Bass-Vibe
+                    
+                    gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.8); // Sanftes Einblenden
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3.8); // Langes Ausklingen
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 4.0);
+                }, 2500); // Alle 2.5 Sekunden ertönt ein neuer entspannter Ton
+            } catch(e) { console.log(e); }
+        }
+
         // 1. 3D WORLD & LIVING ROOM SETUP
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xd4a373);
@@ -70,7 +131,6 @@
                 cube.rotation.y += 0.01; 
             }
             
-            // ROBLOX ATEM-ANIMATION LOOP
             animationTime += 0.04;
             let breatheY = Math.sin(animationTime) * 0.025;
             let breatheScale = 1 + Math.sin(animationTime) * 0.015;
@@ -124,11 +184,8 @@
                         addMessage('Friend', data.text);
                         showBubble('Friend', data.text);
                         
-                        // SOUND BEI REINkommender NACHRICHT ABSPIELEN
-                        const msgAudio = document.getElementById('msgSound');
-                        msgAudio.volume = 0.6;
-                        msgAudio.currentTime = 0;
-                        msgAudio.play().catch(e => console.log("Audio blockiert"));
+                        // GARANTIERT FUNKTIONIERENDER NOTIFICATION SOUND
+                        playMessageSound();
                     } else if (data.type === 'typing') {
                         document.getElementById('typing').innerText = data.text ? 'Friend is typing...' : '';
                     }
@@ -192,35 +249,29 @@
 
             scene.remove(cube);
 
-            const bgMusic = document.getElementById('bgMusic');
-            bgMusic.volume = 0.15;
-            bgMusic.play().catch(e => console.log("User-Klick Fehler abgesichert"));
+            // AKTIVIERT TRACKS & GENERATOR ÜBER DEN KLICK
+            startChillMusic();
             
-            // 3D BODEN (Brauner Holzboden)
             const floorMat = new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.7});
             const floor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 10), floorMat);
             floor.position.y = -0.1;
             scene.add(floor);
 
-            // ROTER TEPPICH
             const carpetMat = new THREE.MeshStandardMaterial({color: 0x990000, roughness: 0.9});
             const carpet = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.02, 3.5), carpetMat);
             carpet.position.set(0, 0.01, 0);
             scene.add(carpet);
 
-            // ORANGE WÄNDE
             const wallMat = new THREE.MeshStandardMaterial({color: 0xe67e22, roughness: 0.6});
             const backWall = new THREE.Mesh(new THREE.BoxGeometry(12, 6, 0.2), wallMat);
             backWall.position.set(0, 3, -5);
             scene.add(backWall);
             
-            // BLAUER HIMMEL HINTER DEM FENSTER
             const skyMat = new THREE.MeshBasicMaterial({color: 0x5dade2});
             const sky = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), skyMat);
             sky.position.set(0, 3.5, -4.95);
             scene.add(sky);
 
-            // DURCHSICHTIGES GLASFENSTER MIT WEISSEM KREUZ
             const windowGroup = new THREE.Group();
             windowGroup.position.set(0, 3.5, -4.9);
 
@@ -238,7 +289,6 @@
             const vertBar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2, 0.1), frameMat); windowGroup.add(vertBar);
             scene.add(windowGroup);
 
-            // HÄNGENDE GLÜHBIRNE MIT LAMPE
             const lampGroup = new THREE.Group();
             lampGroup.position.set(0, 6, 0);
 
@@ -249,14 +299,12 @@
             const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), bulbMat); bulb.position.y = -1.8; lampGroup.add(bulb);
             scene.add(lampGroup);
 
-            // ECHTER LICHTSTRAHL AUF DEN TISCH
             const spotLight = new THREE.SpotLight(0xfff2cc, 3.5, 10, Math.PI / 4, 0.5, 1);
             spotLight.position.set(0, 4.2, 0);
             spotLight.target.position.set(0, 0, 0);
             scene.add(spotLight);
             scene.add(spotLight.target);
 
-            // TISCH
             const table = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 1.8), new THREE.MeshStandardMaterial({color: 0x4a2c11, roughness: 0.5}));
             table.position.set(0, 0.3, 0);
             scene.add(table);
@@ -267,7 +315,6 @@
             let p1LabelText = isHost ? "You" : "Friend";
             let p2LabelText = isHost ? "Friend" : "You";
             
-            // SPAWN AVATARS
             player1Mesh = createCharacter(0x0055ff);
             player1Mesh.position.set(-2.3, 0.5, 0);
             player1Mesh.lookAt(0, 0.5, 0);
@@ -334,10 +381,9 @@
             bubbleSprite.isBubbleSprite = true;
             activeMesh.add(bubbleSprite);
             
-            // FIX: HIER JETZT AUF 10000ms (10 SEKUNDEN) ERHÖHT!
             setTimeout(() => {
                 activeMesh.remove(bubbleSprite);
-            }, 10000);
+            }, 10000); // 10 Sekunden bleiben aktiv
         }
 
         window.addEventListener('resize', () => {
