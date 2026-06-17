@@ -101,7 +101,7 @@
         </div>
         <div id="callStateTitle">Call System</div>
         <div id="callTypeSub">Voice Session</div>
-        
+       
         <div class="overlay-action-row" id="incomingControls">
             <button class="call-action-btn btn-accept" onclick="acceptIncomingCall()">✔</button>
             <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()">✖</button>
@@ -109,7 +109,7 @@
         <div class="overlay-action-row" id="activeControls" style="display: none;">
             <button class="call-action-btn btn-control" id="muteMeBtn" onclick="toggleMuteMe()" title="Mute Mic">🎙</button>
             <button class="call-action-btn btn-control" id="muteFriendBtn" onclick="toggleMuteFriend()" title="Mute Friend">🔊</button>
-            <button class="call-action-btn btn-control" id="toggleCamBtn" onclick="toggleCamera()" title="Toggle Camera">📷</button>
+            <button class="call-action-btn btn-control" id="toggleCamBtn" onclick="requestOrToggleCamera()" title="Toggle Camera">📷</button>
             <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()" title="Hang Up">🛑</button>
         </div>
     </div>
@@ -124,9 +124,7 @@
                 <div class="popover-item" onclick="triggerFileInput('gallery')">🖼 <span>From Gallery</span></div>
                 <div class="popover-item" onclick="triggerFileInput('camera')">📸 <span>Take Photo/Video</span></div>
             </div>
-            
             <input type="text" id="chatInput" placeholder="Type a message... (Press Enter)">
-            
             <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">🎙</div>
         </div>
     </div>
@@ -170,14 +168,14 @@
         function startChillMusic() {
             try {
                 initAudio();
-                const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33]; 
+                const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
                 function playNextNote() {
                     if (!audioCtx) return;
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     const randomNote = notes[Math.floor(Math.random() * notes.length)];
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(randomNote, audioCtx.currentTime); 
+                    osc.frequency.setValueAtTime(randomNote, audioCtx.currentTime);
                     gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
                     gain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 0.4); 
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.8); 
@@ -192,7 +190,6 @@
             } catch(e) { console.log(e); }
         }
 
-        // 3D Engine Initialization Block
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xd4a373);
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
@@ -205,7 +202,6 @@
         const warmLight = new THREE.DirectionalLight(0xffeacc, 0.3);
         warmLight.position.set(5, 8, 5);
         scene.add(warmLight);
-
         const cube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({color: 0x00fff0, wireframe: true}));
         scene.add(cube);
         camera.position.z = 4;
@@ -214,9 +210,9 @@
         let animationTime = 0;
 
         function animate() { 
-            requestAnimationFrame(animate); 
+            requestAnimationFrame(animate);
             if(cube && scene.children.includes(cube)) {
-                cube.rotation.x += 0.01; 
+                cube.rotation.x += 0.01;
                 cube.rotation.y += 0.01; 
             }
             animationTime += 0.04;
@@ -230,24 +226,22 @@
                 player2Mesh.position.y = 0.5 + breatheY;
                 player2Mesh.scale.set(breatheScale, breatheScale, breatheScale);
             }
-            renderer.render(scene, camera); 
+            renderer.render(scene, camera);
         }
         animate();
 
-        // Data & Communications Network State Logic
         const shortId = Math.floor(100000 + Math.random() * 900000).toString();
         const peer = new Peer(shortId);
         let conn, isHost = false;
-        
-        // Media Session Variable references
         let localStream = null;
         let activeCallSession = null;
         let mediaRecorder = null;
         let voiceAudioChunks = [];
         let isVoiceRecording = false;
         let targetPeerId = null;
+        let currentCallIsVideo = false;
+        let isUpgradingCall = false; 
 
-        // Active control mutations
         let myMicMuted = false;
         let remoteAudioMuted = false;
         let myCamMuted = false;
@@ -295,27 +289,38 @@
                     } else if (data.type === 'call_decline') {
                         resetCallInterface();
                         alert("Call ended or declined by your friend.");
+                    } else if (data.type === 'camera_request') {
+                        let acceptCam = confirm("Friend wants to switch to Video Call. Accept?");
+                        if(acceptCam) {
+                            upgradeToVideoCall();
+                        }
+                    } else if (data.type === 'camera_accepted') {
+                        upgradeLocalStreamToVideo();
                     }
                 });
             });
         }
 
-        // WebRTC Calling System handlers
         peer.on('call', call => {
             activeCallSession = call;
-            const isVideoCall = call.options && call.options.metadata && call.options.metadata.video;
+            currentCallIsVideo = call.options && call.options.metadata && call.options.metadata.video;
             
             document.getElementById('callOverlay').style.display = 'flex';
-            document.getElementById('callStateTitle').innerText = "Incoming Call...";
-            document.getElementById('callTypeSub').innerText = isVideoCall ? "Incoming Video Call" : "Incoming Voice Call";
-            document.getElementById('incomingControls').style.display = 'flex';
-            document.getElementById('activeControls').style.display = 'none';
-            document.getElementById('videoGrid').style.display = 'none';
+            document.getElementById('callStateTitle').innerText = isUpgradingCall ? "Call Active" : "Incoming Call...";
+            document.getElementById('callTypeSub').innerText = currentCallIsVideo ? "Incoming Video Call" : "Incoming Voice Call";
+            
+            if (!isUpgradingCall) {
+                document.getElementById('incomingControls').style.display = 'flex';
+                document.getElementById('activeControls').style.display = 'none';
+                document.getElementById('videoGrid').style.display = 'none';
+            } else {
+                acceptIncomingCall();
+            }
         });
 
         async function initiateCall(wantVideo) {
             if(!targetPeerId) return alert("No peer connected to call.");
-            
+            currentCallIsVideo = wantVideo;
             try {
                 document.getElementById('callOverlay').style.display = 'flex';
                 document.getElementById('callStateTitle').innerText = "Calling Friend...";
@@ -336,7 +341,6 @@
                 activeCallSession = peer.call(targetPeerId, localStream, {
                     metadata: { video: wantVideo }
                 });
-
                 handleCallStreamFlow(activeCallSession, wantVideo);
             } catch(err) {
                 console.error("Failed to capture local hardware stream context:", err);
@@ -346,23 +350,27 @@
         }
 
         async function acceptIncomingCall() {
-            const expectVideo = document.getElementById('callTypeSub').innerText.includes("Video");
             try {
+                if (localStream && !isUpgradingCall) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
+                
                 localStream = await navigator.mediaDevices.getUserMedia({
                     audio: true,
-                    video: expectVideo
+                    video: currentCallIsVideo
                 });
 
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
 
-                if(expectVideo) {
+                if(currentCallIsVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('localVideo').srcObject = localStream;
                 }
 
                 activeCallSession.answer(localStream);
-                handleCallStreamFlow(activeCallSession, expectVideo);
+                handleCallStreamFlow(activeCallSession, currentCallIsVideo);
+                isUpgradingCall = false; 
             } catch(err) {
                 console.error("Error answering incoming media flow context:", err);
                 alert("Could not initialize device peripherals to answer call.");
@@ -372,12 +380,15 @@
 
         function handleCallStreamFlow(call, isVideo) {
             call.on('stream', remoteStream => {
-                if(isVideo) {
+                document.getElementById('callStateTitle').innerText = "Call Active";
+                document.getElementById('incomingControls').style.display = 'none';
+                document.getElementById('activeControls').style.display = 'flex';
+                
+                if(isVideo || currentCallIsVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('remoteVideo').srcObject = remoteStream;
                 } else {
                     document.getElementById('videoGrid').style.display = 'none';
-                    // Mount transparent dynamic audio player wrapper for audio sessions
                     let audioNode = document.getElementById('hiddenRemoteAudio');
                     if(!audioNode) {
                         audioNode = document.createElement('audio');
@@ -388,13 +399,53 @@
                     audioNode.srcObject = remoteStream;
                 }
             });
-
             call.on('close', () => {
-                resetCallInterface();
+                if (!isUpgradingCall) {
+                    resetCallInterface();
+                }
             });
         }
 
+        function requestOrToggleCamera() {
+            if(!currentCallIsVideo) {
+                if(conn) conn.send({type: 'camera_request'});
+                alert("Camera request sent to friend.");
+            } else {
+                toggleCamera();
+            }
+        }
+
+        async function upgradeToVideoCall() {
+            if(conn) conn.send({type: 'camera_accepted'});
+            await upgradeLocalStreamToVideo();
+        }
+
+        async function upgradeLocalStreamToVideo() {
+            try {
+                isUpgradingCall = true;
+                if(localStream) {
+                    localStream.getTracks().forEach(t => t.stop());
+                }
+                currentCallIsVideo = true;
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                document.getElementById('videoGrid').style.display = 'block';
+                document.getElementById('localVideo').srcObject = localStream;
+                document.getElementById('callTypeSub').innerText = "Video Call Session";
+                document.getElementById('callStateTitle').innerText = "Call Active";
+
+                if(activeCallSession) activeCallSession.close();
+                activeCallSession = peer.call(targetPeerId, localStream, { metadata: { video: true } });
+                handleCallStreamFlow(activeCallSession, true);
+                
+                setTimeout(() => { isUpgradingCall = false; }, 1000);
+            } catch(e) {
+                console.error(e);
+                isUpgradingCall = false;
+            }
+        }
+
         function declineOrHangupCall() {
+            isUpgradingCall = false;
             if(conn) conn.send({type: 'call_decline'});
             if(activeCallSession) {
                 activeCallSession.close();
@@ -403,6 +454,8 @@
         }
 
         function resetCallInterface() {
+            if (isUpgradingCall) return; 
+            
             document.getElementById('callOverlay').style.display = 'none';
             if(localStream) {
                 localStream.getTracks().forEach(track => track.stop());
@@ -414,9 +467,12 @@
             myMicMuted = false;
             remoteAudioMuted = false;
             myCamMuted = false;
+            currentCallIsVideo = false;
             document.getElementById('muteMeBtn').classList.remove('muted-active');
             document.getElementById('muteFriendBtn').classList.remove('muted-active');
             document.getElementById('toggleCamBtn').classList.remove('muted-active');
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('localVideo').srcObject = null;
         }
 
         function toggleMuteMe() {
@@ -442,7 +498,6 @@
             document.getElementById('toggleCamBtn').classList.toggle('muted-active', myCamMuted);
         }
 
-        // Popover Layout triggers
         function toggleSharePopover() {
             const pop = document.getElementById('sharePopover');
             pop.style.display = (pop.style.display === 'flex') ? 'none' : 'flex';
@@ -455,7 +510,6 @@
             if(type === 'camera') document.getElementById('cameraFileInput').click();
         }
 
-        // Direct Binary Media encoding conversion routing via JSON signaling matrix
         function handleFileTransmission(inputEl, contextMode) {
             const file = inputEl.files[0];
             if(!file || !conn) return;
@@ -473,10 +527,9 @@
                 showBubble('You', "Sent attachments");
             };
             reader.readAsDataURL(file);
-            inputEl.value = ''; // Flush input hook element buffer state
+            inputEl.value = '';
         }
 
-        // Inline Media Player Message node rendering engine
         function addMediaMessage(sender, payload) {
             const div = document.getElementById('messages');
             let contentMarker = '';
@@ -495,7 +548,6 @@
             div.scrollTop = div.scrollHeight;
         }
 
-        // High Quality Voice Messaging Implementation
         async function toggleVoiceRecording() {
             const recBtn = document.getElementById('voiceRecBtn');
             if(!isVoiceRecording) {
@@ -544,14 +596,12 @@
             }
         }
 
-        // Living Room Room Generation Blocks
         function joinRoom(shouldSendSignal) {
             if (shouldSendSignal && conn) {
                 conn.send('JOIN_ROOM');
             }
             scene.remove(cube);
             startChillMusic();
-            
             const floorMat = new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.7});
             const floor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 10), floorMat);
             floor.position.y = -0.1;
@@ -574,7 +624,6 @@
 
             const windowGroup = new THREE.Group();
             windowGroup.position.set(0, 3.5, -4.9);
-
             const glassMat = new THREE.MeshStandardMaterial({color: 0xffffff, transparent: true, opacity: 0.3, roughness: 0.1});
             const glass = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), glassMat);
             windowGroup.add(glass);
@@ -584,7 +633,6 @@
             const borderTopBot2 = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), frameMat); borderTopBot2.position.set(0, -1, 0); windowGroup.add(borderTopBot2);
             const borderLeftRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight.position.set(1.5, 0, 0); windowGroup.add(borderLeftRight);
             const borderLeftRight2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight2.position.set(-1.5, 0, 0); windowGroup.add(borderLeftRight2);
-
             const horizBar = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 0.1), frameMat); windowGroup.add(horizBar);
             const vertBar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2, 0.1), frameMat); windowGroup.add(vertBar);
             scene.add(windowGroup);
@@ -598,13 +646,11 @@
             const bulbMat = new THREE.MeshBasicMaterial({color: 0xfff2cc});
             const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), bulbMat); bulb.position.y = -1.8; lampGroup.add(bulb);
             scene.add(lampGroup);
-
             const spotLight = new THREE.SpotLight(0xfff2cc, 3.5, 10, Math.PI / 4, 0.5, 1);
             spotLight.position.set(0, 4.2, 0);
             spotLight.target.position.set(0, 0, 0);
             scene.add(spotLight);
             scene.add(spotLight.target);
-
             const table = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 1.8), new THREE.MeshStandardMaterial({color: 0x4a2c11, roughness: 0.5}));
             table.position.set(0, 0.3, 0);
             scene.add(table);
@@ -614,21 +660,18 @@
 
             let p1LabelText = isHost ? "You" : "Friend";
             let p2LabelText = isHost ? "Friend" : "You";
-            
             player1Mesh = createCharacter(0x0055ff);
             player1Mesh.position.set(-2.3, 0.5, 0);
             player1Mesh.lookAt(0, 0.5, 0);
             
             const p1Label = createLabel(p1LabelText); p1Label.position.y = 0.85; player1Mesh.add(p1Label);
             scene.add(player1Mesh);
-
             player2Mesh = createCharacter(0xff2233);
             player2Mesh.position.set(2.3, 0.5, 0);
             player2Mesh.lookAt(0, 0.5, 0);
             
             const p2Label = createLabel(p2LabelText); p2Label.position.y = 0.85; player2Mesh.add(p2Label);
             scene.add(player2Mesh);
-            
             document.getElementById('ui').style.display = 'none';
             document.getElementById('chatBox').style.display = 'flex';
         }
@@ -638,7 +681,6 @@
             canvas.width = 512;
             canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            
             if(isBubble) {
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
                 ctx.roundRect(10, 10, 492, 108, 20);
@@ -672,24 +714,23 @@
             const pupilMat = new THREE.MeshBasicMaterial({color: 0x000000});
             const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
             
-            const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-0.18, 0.15, 0.42);
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+            leftEye.position.set(-0.18, 0.15, 0.42);
             const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.18, 0.15, 0.42);
-            const leftPupil = new THREE.Mesh(eyeGeo, pupilMat); leftPupil.scale.set(0.5,0.5,0.5); leftPupil.position.set(-0.18, 0.15, 0.48);
+            const leftPupil = new THREE.Mesh(eyeGeo, pupilMat); leftPupil.scale.set(0.5,0.5,0.5);
+            leftPupil.position.set(-0.18, 0.15, 0.48);
             const rightPupil = new THREE.Mesh(eyeGeo, pupilMat); rightPupil.scale.set(0.5,0.5,0.5); rightPupil.position.set(0.18, 0.15, 0.48);
             
             group.add(leftEye, rightEye, leftPupil, rightPupil);
             return group;
         }
 
-        // Chat Entry Interface Pipeline Hooks
         const chatInput = document.getElementById('chatInput');
-        
         chatInput.addEventListener('input', () => {
             if (conn) {
                 conn.send({type: 'typing', text: chatInput.value.length > 0});
             }
         });
-
         chatInput.onkeypress = (e) => {
             if (e.key === 'Enter' && conn) {
                 const msg = chatInput.value;
@@ -718,22 +759,18 @@
                 activeMesh = isHost ? player2Mesh : player1Mesh;
             }
             if(!activeMesh) return;
-            
             activeMesh.children.forEach(child => {
                 if(child.isBubbleSprite) activeMesh.remove(child);
             });
-            
             const bubbleSprite = createLabel(text, true);
             bubbleSprite.position.y = 1.4; 
             bubbleSprite.isBubbleSprite = true;
             activeMesh.add(bubbleSprite);
-            
             setTimeout(() => {
                 activeMesh.remove(bubbleSprite);
             }, 5000);
         }
 
-        // Explicitly dismiss attachments dropdown popover container if tapping outside space bounds
         window.addEventListener('click', (e) => {
             const pop = document.getElementById('sharePopover');
             if(!e.target.innerText.includes('➕') && pop.style.display === 'flex') {
