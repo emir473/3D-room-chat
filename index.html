@@ -22,8 +22,11 @@
         /* Layout adjustments for layout windows */
         #chatBox { position: absolute; bottom: 20px; left: 20px; width: 340px; height: 260px; background: rgba(20, 20, 20, 0.85); border: 1px solid #444; border-radius: 12px; display: none; flex-direction: column; padding: 12px; z-index: 100; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
         #messages { flex: 1; overflow-y: auto; font-size: 14px; margin-bottom: 8px; padding-right: 5px; }
-        #messages img, #messages video { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; border: 1px solid #444; }
-        #messages audio { width: 100%; margin-top: 5px; display: block; }
+        
+        /* NEW Compact Media Layout styles */
+        #messages img, #messages video { max-width: 110px; max-height: 80px; border-radius: 6px; margin-top: 5px; display: inline-block; border: 2px solid #00fff0; cursor: pointer; object-fit: cover; background: #000; transition: transform 0.2s; }
+        #messages img:hover, #messages video:hover { transform: scale(1.04); }
+        #messages audio { width: 100%; margin-top: 5px; display: block; filter: hue-rotate(180deg); }
         #messages .file-link { display: inline-block; background: #333; color: #00fff0; padding: 6px 12px; border-radius: 6px; text-decoration: none; margin-top: 5px; font-size: 12px; border: 1px solid #555; }
         #typing { font-size: 12px; color: #00fff0; height: 15px; margin-bottom: 4px; font-style: italic; }
         
@@ -32,9 +35,12 @@
         #chatInput { flex: 1; padding: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 20px; box-sizing: border-box; font-size: 14px; margin: 0; }
         
         /* Action Buttons styling */
-        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; flex-shrink: 0; transition: background 0.2s; font-size: 16px; margin: 0; }
+        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; flex-shrink: 0; transition: background 0.2s; font-size: 16px; margin: 0; position: relative; }
         .action-icon-btn:hover { background: #3a3a3a; }
         .action-icon-btn.active-rec { background: #ff2233; animation: pulse-rec 1.5s infinite; }
+
+        /* LIVE Recording Timer UI overlay */
+        #recTimerDisplay { display: none; position: absolute; left: 45px; background: rgba(255, 34, 51, 0.9); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; white-space: nowrap; z-index: 105; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
 
         @keyframes pulse-rec {
             0% { transform: scale(1); }
@@ -71,6 +77,12 @@
         #remoteVideo { width: 100%; height: 100%; object-fit: cover; pointer-events: auto; }
         #localVideo { position: absolute; bottom: 20px; right: 20px; width: 100px; height: 150px; object-fit: cover; border: 2px solid #00fff0; border-radius: 8px; background: #000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transform: scaleX(-1); pointer-events: auto; }
 
+        /* NEW Immersive Fullscreen Lightbox Viewport Overlay */
+        #lightboxOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 5, 0.95); z-index: 2000; justify-content: center; align-items: center; }
+        #lightboxOverlay .lightbox-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: #ff2233; color: white; font-size: 24px; font-weight: bold; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 2010; }
+        #lightboxContainer { max-width: 90%; max-height: 85%; display: flex; justify-content: center; align-items: center; }
+        #lightboxContainer img, #lightboxContainer video { max-width: 100%; max-height: 85vh; border: 3px solid #00fff0; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); background: #000; }
+
         /* Utility hidden input field hooks */
         .hidden-file-input { display: none !important; }
     </style>
@@ -101,7 +113,7 @@
         </div>
         <div id="callStateTitle">Call System</div>
         <div id="callTypeSub">Voice Session</div>
-       
+        
         <div class="overlay-action-row" id="incomingControls">
             <button class="call-action-btn btn-accept" onclick="acceptIncomingCall()">✔</button>
             <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()">✖</button>
@@ -125,8 +137,15 @@
                 <div class="popover-item" onclick="triggerFileInput('camera')">📸 <span>Take Photo/Video</span></div>
             </div>
             <input type="text" id="chatInput" placeholder="Type a message... (Press Enter)">
-            <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">🎙</div>
+            <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">🎙
+                <div id="recTimerDisplay">0:00</div>
+            </div>
         </div>
+    </div>
+
+    <div id="lightboxOverlay">
+        <button class="lightbox-close" onclick="closeLightbox()">✖</button>
+        <div id="lightboxContainer"></div>
     </div>
 
     <input type="file" id="genericFileInput" class="hidden-file-input" onchange="handleFileTransmission(this, 'file')">
@@ -138,6 +157,7 @@
     <script>
         let audioCtx = null;
         let bgTimeout = null;
+        let isMusicSupressed = false; // Internal flag to handle local music pauses
 
         function initAudio() {
             if (!audioCtx) {
@@ -165,12 +185,44 @@
             } catch(e) { console.log(e); }
         }
 
+        // NEW Web Audio API dynamic Animal Crossing synth speech synthesizer tone generator
+        function playAnimalSoundCharacter() {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                // Classic high-pitched gibberish frequencies typical for Animal Crossing dialogue mapping layers
+                const baseFreq = 900 + (Math.random() * 450); 
+                osc.type = Math.random() > 0.5 ? 'triangle' : 'sine';
+                osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+                
+                // Rapid frequency modulation chip tone effect 
+                osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.4, audioCtx.currentTime + 0.04);
+                
+                gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.045);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.045);
+            } catch(e) { console.log(e); }
+        }
+
         function startChillMusic() {
             try {
                 initAudio();
                 const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
                 function playNextNote() {
                     if (!audioCtx) return;
+                    
+                    // If local suppression active (call/video/voice playback), bypass processing node pipeline triggers
+                    if (isMusicSupressed) {
+                        bgTimeout = setTimeout(playNextNote, 1000);
+                        return;
+                    }
+                    
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     const randomNote = notes[Math.floor(Math.random() * notes.length)];
@@ -188,6 +240,11 @@
                 }
                 playNextNote();
             } catch(e) { console.log(e); }
+        }
+
+        // External orchestration wrapper to toggle localized music suppression flows safely
+        function setMusicSuppressionState(shouldSuppress) {
+            isMusicSupressed = shouldSuppress;
         }
 
         const scene = new THREE.Scene();
@@ -238,6 +295,8 @@
         let mediaRecorder = null;
         let voiceAudioChunks = [];
         let isVoiceRecording = false;
+        let voiceRecSeconds = 0;
+        let voiceRecTimerInterval = null;
         let targetPeerId = null;
         let currentCallIsVideo = false;
         let isUpgradingCall = false; 
@@ -245,7 +304,7 @@
         let myMicMuted = false;
         let remoteAudioMuted = false;
         let myCamMuted = false;
-
+        
         peer.on('open', id => {
             document.getElementById('status').innerHTML = 'Your ID: <b style="color:#00fff0; font-size:16px;">' + id + '</b>';
         });
@@ -278,13 +337,13 @@
                         joinRoom(false);
                     } else if (data.type === 'chat') {
                         addMessage('Friend', data.text);
-                        showBubble('Friend', "Sent a message");
+                        showBubble('Friend', data.text); // Passes actual text contents to render engine layer
                         playMessageSound();
                     } else if (data.type === 'typing') {
                         document.getElementById('typing').innerText = data.text ? 'Friend is typing...' : '';
                     } else if (data.type === 'media') {
                         addMediaMessage('Friend', data);
-                        showBubble('Friend', "Sent a file");
+                        showBubble('Friend', "[Media Attachment]");
                         playMessageSound();
                     } else if (data.type === 'call_decline') {
                         resetCallInterface();
@@ -309,6 +368,8 @@
             document.getElementById('callStateTitle').innerText = isUpgradingCall ? "Call Active" : "Incoming Call...";
             document.getElementById('callTypeSub').innerText = currentCallIsVideo ? "Incoming Video Call" : "Incoming Voice Call";
             
+            setMusicSuppressionState(true); // Suppress local music background context channels on incoming calls
+
             if (!isUpgradingCall) {
                 document.getElementById('incomingControls').style.display = 'flex';
                 document.getElementById('activeControls').style.display = 'none';
@@ -328,9 +389,16 @@
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
                 
+                setMusicSuppressionState(true); // Suppress background channel execution
+
+                // HIGH QUALITY LAYER: Embedded explicit constraints ensuring ideal high-fidelity 720p/HD hardware acquisition contexts
                 localStream = await navigator.mediaDevices.getUserMedia({
                     audio: true,
-                    video: wantVideo
+                    video: wantVideo ? {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: "user"
+                    } : false
                 });
 
                 if(wantVideo) {
@@ -355,9 +423,14 @@
                     localStream.getTracks().forEach(track => track.stop());
                 }
                 
+                // HIGH QUALITY LAYER: Embedded explicit constraints ensuring ideal high-fidelity 720p/HD parameters on acceptance operations
                 localStream = await navigator.mediaDevices.getUserMedia({
                     audio: true,
-                    video: currentCallIsVideo
+                    video: currentCallIsVideo ? {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: "user"
+                    } : false
                 });
 
                 document.getElementById('incomingControls').style.display = 'none';
@@ -427,7 +500,17 @@
                     localStream.getTracks().forEach(t => t.stop());
                 }
                 currentCallIsVideo = true;
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                
+                // HIGH QUALITY LAYER: Forcing high bit-rate HD capabilities when upgrading audio channels mid-call session mappings
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: true, 
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: "user"
+                    } 
+                });
+                
                 document.getElementById('videoGrid').style.display = 'block';
                 document.getElementById('localVideo').srcObject = localStream;
                 document.getElementById('callTypeSub').innerText = "Video Call Session";
@@ -436,7 +519,6 @@
                 if(activeCallSession) activeCallSession.close();
                 activeCallSession = peer.call(targetPeerId, localStream, { metadata: { video: true } });
                 handleCallStreamFlow(activeCallSession, true);
-                
                 setTimeout(() => { isUpgradingCall = false; }, 1000);
             } catch(e) {
                 console.error(e);
@@ -454,8 +536,7 @@
         }
 
         function resetCallInterface() {
-            if (isUpgradingCall) return; 
-            
+            if (isUpgradingCall) return;
             document.getElementById('callOverlay').style.display = 'none';
             if(localStream) {
                 localStream.getTracks().forEach(track => track.stop());
@@ -473,6 +554,8 @@
             document.getElementById('toggleCamBtn').classList.remove('muted-active');
             document.getElementById('remoteVideo').srcObject = null;
             document.getElementById('localVideo').srcObject = null;
+            
+            setMusicSuppressionState(false); // Restore background music execution tracking layers safely
         }
 
         function toggleMuteMe() {
@@ -524,7 +607,7 @@
                 };
                 conn.send(payload);
                 addMediaMessage('You', payload);
-                showBubble('You', "Sent attachments");
+                showBubble('You', "[Media Attachment]");
             };
             reader.readAsDataURL(file);
             inputEl.value = '';
@@ -534,12 +617,14 @@
             const div = document.getElementById('messages');
             let contentMarker = '';
 
+            // NEW Compact layout integration injecting fullscreen Lightbox callbacks upon click events
             if(payload.mime.startsWith('image/')) {
-                contentMarker = `<img src="${payload.dataUrl}" alt="shared image" onclick="window.open(this.src)"/>`;
+                contentMarker = `<img src="${payload.dataUrl}" alt="shared image" onclick="openLightbox('${payload.dataUrl}', 'image')"/>`;
             } else if(payload.mime.startsWith('video/')) {
-                contentMarker = `<video src="${payload.dataUrl}" controls playsinline></video>`;
+                contentMarker = `<video src="${payload.dataUrl}" onclick="openLightbox('${payload.dataUrl}', 'video')" preload="metadata"></video>`;
             } else if(payload.mime.startsWith('audio/')) {
-                contentMarker = `<audio src="${payload.dataUrl}" controls></audio>`;
+                // Attached native browser events to dynamically pause/resume chill music nodes depending on operational state 
+                contentMarker = `<audio src="${payload.dataUrl}" controls onplay="setMusicSuppressionState(true)" onpause="setMusicSuppressionState(false)" onended="setMusicSuppressionState(false)"></audio>`;
             } else {
                 contentMarker = `<a href="${payload.dataUrl}" download="${payload.name}" class="file-link">📁 Download ${payload.name}</a>`;
             }
@@ -548,8 +633,38 @@
             div.scrollTop = div.scrollHeight;
         }
 
+        // NEW Immersive Viewport Lightbox orchestration logic handling high-quality localized full-screen scaling
+        function openLightbox(sourceUrl, fileType) {
+            const overlay = document.getElementById('lightboxOverlay');
+            const container = document.getElementById('lightboxContainer');
+            
+            setMusicSuppressionState(true); // Automatically freeze underlying soundtrack elements locally
+
+            if (fileType === 'image') {
+                container.innerHTML = `<img src="${sourceUrl}" alt="Lightbox media content frame layer">`;
+            } else if (fileType === 'video') {
+                container.innerHTML = `<video src="${sourceUrl}" controls autoplay playsinline style="width:100%; max-height:80vh;"></video>`;
+            }
+            overlay.style.display = 'flex';
+        }
+
+        function closeLightbox() {
+            const container = document.getElementById('lightboxContainer');
+            
+            // Stop any playing instance safely inside the media frame element layout mappings before detachment
+            const videoEl = container.querySelector('video');
+            if(videoEl) videoEl.pause();
+            
+            document.getElementById('lightboxOverlay').style.display = 'none';
+            container.innerHTML = '';
+            
+            setMusicSuppressionState(false); // Unmute and resume background audio parameters safely
+        }
+
         async function toggleVoiceRecording() {
             const recBtn = document.getElementById('voiceRecBtn');
+            const timerDisplay = document.getElementById('recTimerDisplay');
+            
             if(!isVoiceRecording) {
                 try {
                     const recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -573,12 +688,24 @@
                                 };
                                 conn.send(payload);
                                 addMediaMessage('You', payload);
-                                showBubble('You', "Voice Message");
+                                showBubble('You', "[Voice Note]");
                             }
                         };
                         reader.readAsDataURL(audioBlob);
                         recStream.getTracks().forEach(t => t.stop());
                     };
+
+                    // NEW Dynamic counting live recording timer routine
+                    voiceRecSeconds = 0;
+                    timerDisplay.innerText = "0:00";
+                    timerDisplay.style.display = "block";
+                    
+                    voiceRecTimerInterval = setInterval(() => {
+                        voiceRecSeconds++;
+                        const mins = Math.floor(voiceRecSeconds / 60);
+                        const secs = voiceRecSeconds % 60;
+                        timerDisplay.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                    }, 1000);
 
                     mediaRecorder.start();
                     isVoiceRecording = true;
@@ -588,6 +715,13 @@
                     alert("Could not initialize microphone hardware routing mapping layer.");
                 }
             } else {
+                // Clear active running recording interval timers safely
+                if(voiceRecTimerInterval) {
+                    clearInterval(voiceRecTimerInterval);
+                    voiceRecTimerInterval = null;
+                }
+                timerDisplay.style.display = "none";
+
                 if(mediaRecorder && mediaRecorder.state !== 'inactive') {
                     mediaRecorder.stop();
                 }
@@ -676,16 +810,37 @@
             document.getElementById('chatBox').style.display = 'flex';
         }
 
+        // Texture rendering support engine interface mapping layer tracking operations
         function createLabel(text, isBubble = false) {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
             canvas.height = 128;
             const ctx = canvas.getContext('2d');
+            drawLabelOnCanvas(canvas, ctx, text, isBubble);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(2.5, 0.6, 1);
+            
+            // Expose background canvas handlers directly onto the object references for dynamic typewriter rendering loops
+            sprite.associatedCanvas = canvas;
+            sprite.associatedContext = ctx;
+            sprite.associatedTexture = texture;
+            return sprite;
+        }
+
+        // Abstracted drawing layer isolation enabling live real-time canvas updates
+        function drawLabelOnCanvas(canvas, ctx, text, isBubble) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             if(isBubble) {
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
                 ctx.roundRect(10, 10, 492, 108, 20);
                 ctx.fill();
-                ctx.font = 'bold 24px Arial';
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#00fff0';
+                ctx.stroke();
+                ctx.font = 'bold 22px Arial';
                 ctx.fillStyle = '#111111';
             } else {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
@@ -696,13 +851,13 @@
             }
             
             ctx.textAlign = 'center';
-            ctx.fillText(text, 256, 74);
             
-            const texture = new THREE.CanvasTexture(canvas);
-            const spriteMat = new THREE.SpriteMaterial({ map: texture });
-            const sprite = new THREE.Sprite(spriteMat);
-            sprite.scale.set(2.5, 0.6, 1);
-            return sprite;
+            // Truncation rules safeguarding bounds during large text streams
+            let renderedText = text;
+            if(isBubble && renderedText.length > 30) {
+                renderedText = renderedText.substring(0, 27) + "...";
+            }
+            ctx.fillText(renderedText, 256, 74);
         }
 
         function createCharacter(color) {
@@ -738,7 +893,7 @@
                 
                 conn.send({type: 'chat', text: msg});
                 addMessage('You', msg);
-                showBubble('You', "Sent text");
+                showBubble('You', msg); // Passes real message array into typewriter pipeline
                 
                 chatInput.value = '';
                 conn.send({type: 'typing', text: false});
@@ -751,6 +906,7 @@
             div.scrollTop = div.scrollHeight;
         }
 
+        // NEW Animal Crossing Typewriter Sprechblasen Rendering-Engine (15 Sekunden State)
         function showBubble(target, text) {
             let activeMesh = null;
             if(target === 'You') {
@@ -759,25 +915,52 @@
                 activeMesh = isHost ? player2Mesh : player1Mesh;
             }
             if(!activeMesh) return;
+            
+            // Clean up any existing intervals or residual bubbles attached to this active peer group context safely
+            if(activeMesh.typewriterInterval) clearInterval(activeMesh.typewriterInterval);
+            if(activeMesh.bubbleLifespanTimeout) clearTimeout(activeMesh.bubbleLifespanTimeout);
+            
             activeMesh.children.forEach(child => {
                 if(child.isBubbleSprite) activeMesh.remove(child);
             });
-            const bubbleSprite = createLabel(text, true);
+
+            // Instantiate overhead sprite with blank initialization states
+            const bubbleSprite = createLabel("", true);
             bubbleSprite.position.y = 1.4; 
             bubbleSprite.isBubbleSprite = true;
             activeMesh.add(bubbleSprite);
-            setTimeout(() => {
-                activeMesh.remove(bubbleSprite);
-            }, 5000);
+
+            let currentStringIndex = 0;
+            let animatedStringAccumulator = "";
+            
+            // Fast-paced typewriter sequence mimicking native Animal Crossing dialogues (approx 35ms per frame update)
+            activeMesh.typewriterInterval = setInterval(() => {
+                if(currentStringIndex < text.length) {
+                    animatedStringAccumulator += text[currentStringIndex];
+                    
+                    // Re-render sub-content layout layers directly onto textures dynamically
+                    drawLabelOnCanvas(bubbleSprite.associatedCanvas, bubbleSprite.associatedContext, animatedStringAccumulator, true);
+                    bubbleSprite.associatedTexture.needsUpdate = true;
+                    
+                    playAnimalSoundCharacter(); // Trigger non-blocking real-time synthetic chiptune voice node blips
+                    currentStringIndex++;
+                } else {
+                    clearInterval(activeMesh.typewriterInterval);
+                    
+                    // NEW: Persistent 15-second lifespan visibility lock on completion of text animation cycles
+                    activeMesh.bubbleLifespanTimeout = setTimeout(() => {
+                        activeMesh.remove(bubbleSprite);
+                    }, 15000);
+                }
+            }, 35);
         }
 
         window.addEventListener('click', (e) => {
             const pop = document.getElementById('sharePopover');
-            if(!e.target.innerText.includes('➕') && pop.style.display === 'flex') {
+            if(e.target.innerText && !e.target.innerText.includes('➕') && pop.style.display === 'flex') {
                 pop.style.display = 'none';
             }
         });
-
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
