@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Multiplayer Chat Room</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #111; font-family: sans-serif; }
+        #ui { position: absolute; top: 10px; left: 10px; width: 300px; background: rgba(0,0,0,0.9); color: white; padding: 15px; border-radius: 8px; border: 2px solid #00ff00; z-index: 100; }
+        #joinBtn { display: none; width: 100%; padding: 10px; background: #00ff00; border: none; font-weight: bold; margin-top: 10px; cursor: pointer; color: black; }
+        input, button { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+        #chatBox { position: absolute; bottom: 20px; left: 20px; width: 320px; height: 240px; background: rgba(0,0,0,0.8); border: 1px solid #555; border-radius: 6px; display: none; flex-direction: column; padding: 10px; z-index: 100; color: white; }
+        #messages { flex: 1; overflow-y: auto; font-size: 14px; margin-bottom: 5px; padding-right: 5px; }
+        #chatInput { width: 100%; padding: 6px; background: #222; border: 1px solid #444; color: white; border-radius: 4px; }
+        #typing { font-size: 12px; color: #aaa; height: 15px; margin-bottom: 2px; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <div id="status">Lade...</div>
+        <input type="text" id="peerId" placeholder="ID des Freundes">
+        <button onclick="connect()">Verbinden</button>
+        <button id="joinBtn" onclick="joinRoom(true)">Join 3D Chatting Server &#128172;</button>
+    </div>
+
+    <div id="chatBox">
+        <div id="messages"></div>
+        <div id="typing"></div>
+        <input type="text" id="chatInput" placeholder="Nachricht eingeben... (Enter drücken)">
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script>
+        // 1. 3D WELT SETUP
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Start-Objekt: Rotierender grüner Würfel
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({color: 0x00ff00, wireframe: true}));
+        scene.add(cube);
+        camera.position.z = 5;
+
+        function animate() { 
+            requestAnimationFrame(animate); 
+            if(cube && scene.children.includes(cube)) {
+                cube.rotation.x += 0.01; 
+                cube.rotation.y += 0.01; 
+            }
+            renderer.render(scene, camera); 
+        }
+        animate();
+
+        // 2. NETZWERK (PEERJS) LOGIK
+        const peer = new Peer();
+        let conn, isHost = false;
+        
+        peer.on('open', id => {
+            document.getElementById('status').innerText = 'Deine ID: ' + id;
+        });
+
+        function connect() {
+            const id = document.getElementById('peerId').value;
+            if(!id) return alert("Bitte eine ID eingeben!");
+            document.getElementById('status').innerText = 'Verbinde...';
+            conn = peer.connect(id);
+            isHost = false;
+            setupConnection();
+        }
+
+        peer.on('connection', c => { 
+            conn = c; 
+            isHost = true; 
+            setupConnection(); 
+        });
+
+        function setupConnection() {
+            conn.on('open', () => {
+                document.getElementById('status').innerText = 'Verbunden!';
+                document.getElementById('joinBtn').style.display = 'block';
+                
+                conn.on('data', data => {
+                    if (data === 'JOIN_ROOM') {
+                        joinRoom(false);
+                    } else if (data.type === 'chat') {
+                        addMessage('Freund: ' + data.text);
+                    } else if (data.type === 'typing') {
+                        document.getElementById('typing').innerText = data.text ? 'Freund tippt...' : '';
+                    }
+                });
+            });
+        }
+
+        // 3. 3D RAUM BETRETEN & CHAT ANZEIGEN
+        function joinRoom(shouldSendSignal) {
+            if (shouldSendSignal && conn) {
+                conn.send('JOIN_ROOM');
+            }
+
+            scene.remove(cube);
+            
+            // Holztisch erstellen
+            const table = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 2), new THREE.MeshBasicMaterial({color: 0x8B4513}));
+            scene.add(table);
+
+            // Kamera umstellen
+            camera.position.set(0, 3, 7);
+            camera.lookAt(0, 0, 0);
+
+            // Spieler spawnen
+            const player1 = new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshBasicMaterial({color: 0xff0000}));
+            player1.position.set(-1.5, 0.5, 0);
+            scene.add(player1);
+
+            const player2 = new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshBasicMaterial({color: 0x0000ff}));
+            player2.position.set(1.5, 0.5, 0);
+            scene.add(player2);
+            
+            document.getElementById('ui').style.display = 'none';
+            document.getElementById('chatBox').style.display = 'flex';
+        }
+
+        // 4. CHAT SYSTEM STEUERUNG
+        const chatInput = document.getElementById('chatInput');
+        
+        chatInput.addEventListener('input', () => {
+            if (conn) {
+                conn.send({type: 'typing', text: chatInput.value.length > 0});
+            }
+        });
+
+        chatInput.onkeypress = (e) => {
+            if (e.key === 'Enter' && conn) {
+                const msg = chatInput.value;
+                if(!msg.trim()) return;
+                
+                conn.send({type: 'chat', text: msg});
+                addMessage('Du: ' + msg);
+                chatInput.value = '';
+                conn.send({type: 'typing', text: false});
+            }
+        };
+
+        function addMessage(msg) {
+            const div = document.getElementById('messages');
+            div.innerHTML += `<div>${msg}</div>`;
+            div.scrollTop = div.scrollHeight;
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
