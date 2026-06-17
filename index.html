@@ -22,7 +22,10 @@
         /* Layout adjustments for layout windows */
         #chatBox { position: absolute; bottom: 20px; left: 20px; width: 340px; height: 260px; background: rgba(20, 20, 20, 0.85); border: 1px solid #444; border-radius: 12px; display: none; flex-direction: column; padding: 12px; z-index: 100; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
         #messages { flex: 1; overflow-y: auto; font-size: 14px; margin-bottom: 8px; padding-right: 5px; }
-        #messages img, #messages video { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; border: 1px solid #444; }
+        
+        /* Optimierte, kleinere Medienansicht im Chat */
+        #messages img, #messages video { max-width: 120px; max-height: 120px; border-radius: 8px; margin-top: 5px; display: block; border: 2px solid #444; cursor: pointer; transition: transform 0.2s; object-fit: cover; }
+        #messages img:hover, #messages video:hover { transform: scale(1.03); border-color: #00fff0; }
         #messages audio { width: 100%; margin-top: 5px; display: block; }
         #messages .file-link { display: inline-block; background: #333; color: #00fff0; padding: 6px 12px; border-radius: 6px; text-decoration: none; margin-top: 5px; font-size: 12px; border: 1px solid #555; }
         #typing { font-size: 12px; color: #00fff0; height: 15px; margin-bottom: 4px; font-style: italic; }
@@ -32,13 +35,13 @@
         #chatInput { flex: 1; padding: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 20px; box-sizing: border-box; font-size: 14px; margin: 0; }
         
         /* Action Buttons styling */
-        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; flex-shrink: 0; transition: background 0.2s; font-size: 16px; margin: 0; }
+        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; flex-shrink: 0; transition: background 0.2s; font-size: 16px; margin: 0; position: relative; }
         .action-icon-btn:hover { background: #3a3a3a; }
-        .action-icon-btn.active-rec { background: #ff2233; animation: pulse-rec 1.5s infinite; }
+        .action-icon-btn.active-rec { background: #ff2233; animation: pulse-rec 1.5s infinite; width: auto; padding: 0 12px; border-radius: 18px; font-size: 13px; font-weight: bold; gap: 4px; }
 
         @keyframes pulse-rec {
             0% { transform: scale(1); }
-            50% { transform: scale(1.08); }
+            50% { transform: scale(1.04); }
             100% { transform: scale(1); }
         }
 
@@ -70,6 +73,14 @@
         #videoGrid { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         #remoteVideo { width: 100%; height: 100%; object-fit: cover; pointer-events: auto; }
         #localVideo { position: absolute; bottom: 20px; right: 20px; width: 100px; height: 150px; object-fit: cover; border: 2px solid #00fff0; border-radius: 8px; background: #000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transform: scaleX(-1); pointer-events: auto; }
+
+        /* Modern Fullscreen Modal Overlay System */
+        #mediaFullscreenModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 10, 0.95); z-index: 2000; justify-content: center; align-items: center; }
+        #mediaFullscreenModal content { max-width: 90%; max-height: 90%; display: flex; justify-content: center; align-items: center; position: relative; }
+        #fullscreenImage { max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: none; border: 1px solid #444; }
+        #fullscreenVideo { max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: none; border: 1px solid #444; }
+        #closeModalBtn { position: absolute; top: 25px; right: 25px; width: 45px; height: 45px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: white; border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; z-index: 2010; }
+        #closeModalBtn:hover { background: #e74c3c; border-color: #e74c3c; transform: scale(1.05); }
 
         /* Utility hidden input field hooks */
         .hidden-file-input { display: none !important; }
@@ -129,6 +140,14 @@
         </div>
     </div>
 
+    <div id="mediaFullscreenModal">
+        <button id="closeModalBtn" onclick="closeFullscreenModal()">✕</button>
+        <div id="mediaFullscreenContent">
+            <img id="fullscreenImage" src="" alt="Fullscreen view">
+            <video id="fullscreenVideo" controls playsinline></video>
+        </div>
+    </div>
+
     <input type="file" id="genericFileInput" class="hidden-file-input" onchange="handleFileTransmission(this, 'file')">
     <input type="file" id="galleryFileInput" class="hidden-file-input" accept="image/*,video/*" onchange="handleFileTransmission(this, 'gallery')">
     <input type="file" id="cameraFileInput" class="hidden-file-input" accept="image/*,video/*" capture="environment" onchange="handleFileTransmission(this, 'camera')">
@@ -138,10 +157,9 @@
     <script>
         let audioCtx = null;
         let bgTimeout = null;
-        let isMusicPlaying = false;
-        let isAnimalVoiceSpeaking = false;
-        let activeAudioTagsPlaying = 0;
-        let isInActiveCall = false;
+        let musicIsPausedLokal = false;
+        let targetMusicVolume = 0.35;
+        let globalGainNode = null;
 
         function initAudio() {
             if (!audioCtx) {
@@ -169,137 +187,93 @@
             } catch(e) { console.log(e); }
         }
 
-        function startChillMusic() {
-            if (isMusicPlaying) return;
-            isMusicPlaying = true;
+        // Animal Crossing Voice Generator Logic (Procedural Beeps & Bloops)
+        function playAnimalCrossingVoiceCharacterClick(char) {
             try {
                 initAudio();
+                if (musicIsPausedLokal) return; 
+                
+                // Dim down background music volume smoothly if typing bubble voice active
+                if(globalGainNode) {
+                    globalGainNode.gain.setValueAtTime(globalGainNode.gain.value, audioCtx.currentTime);
+                    globalGainNode.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.1);
+                }
+
+                const code = char.toLowerCase().charCodeAt(0) || 100;
+                let pitchFactor = 1.0;
+                if (code >= 97 && code <= 122) {
+                    pitchFactor = 0.7 + ((code - 97) / 25) * 0.9; 
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                // Animal Crossing uses hybrid triangle/square nodes
+                osc.type = (code % 2 === 0) ? 'triangle' : 'square';
+                
+                const baseFreq = 260 * pitchFactor;
+                osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+                
+                // Add tiny pitch modulation (wobble) characteristic of Animal Crossing voices
+                osc.frequency.linearRampToValueAtTime(baseFreq * 1.15, audioCtx.currentTime + 0.03);
+                osc.frequency.linearRampToValueAtTime(baseFreq * 0.95, audioCtx.currentTime + 0.06);
+
+                gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.075);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            } catch(e) { console.log(e); }
+        }
+
+        function restoreMusicVolumeToNormal() {
+            if(globalGainNode && !musicIsPausedLokal) {
+                globalGainNode.gain.setValueAtTime(globalGainNode.gain.value, audioCtx.currentTime);
+                globalGainNode.gain.linearRampToValueAtTime(targetMusicVolume, audioCtx.currentTime + 0.4);
+            }
+        }
+
+        // Mute / Unmute Chill Background Music safely locally
+        function setLocalMusicMuteState(shouldMute) {
+            musicIsPausedLokal = shouldMute;
+            if(globalGainNode) {
+                globalGainNode.gain.setValueAtTime(globalGainNode.gain.value, audioCtx.currentTime);
+                globalGainNode.gain.linearRampToValueAtTime(shouldMute ? 0.0 : targetMusicVolume, audioCtx.currentTime + 0.2);
+            }
+        }
+
+        function startChillMusic() {
+            try {
+                initAudio();
+                if(!globalGainNode) {
+                    globalGainNode = audioCtx.createGain();
+                    globalGainNode.gain.setValueAtTime(targetMusicVolume, audioCtx.currentTime);
+                    globalGainNode.connect(audioCtx.destination);
+                }
                 const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
                 function playNextNote() {
-                    if (!audioCtx || !isMusicPlaying) return;
-                    
-                    // Komplett stoppen, wenn Medien laufen oder ein Anruf aktiv ist
-                    if (activeAudioTagsPlaying > 0 || isInActiveCall) {
-                        const randomDelay = Math.floor(Math.random() * 1600) + 1200;
-                        bgTimeout = setTimeout(playNextNote, randomDelay);
-                        return;
+                    if (!audioCtx) return;
+                    if (!musicIsPausedLokal) {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        const randomNote = notes[Math.floor(Math.random() * notes.length)];
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(randomNote, audioCtx.currentTime);
+                        gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+                        gain.gain.linearRampToValueAtTime(1.0, audioCtx.currentTime + 0.4); 
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.8); 
+                        osc.connect(gain);
+                        gain.connect(globalGainNode);
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + 3.0);
                     }
-
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    const randomNote = notes[Math.floor(Math.random() * notes.length)];
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(randomNote, audioCtx.currentTime);
-                    
-                    // Bestimme Ziel-Lautstärke basierend auf der Animal Crossing Stimme
-                    let targetVolume = isAnimalVoiceSpeaking ? 0.05 : 0.35;
-                    
-                    gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
-                    gain.gain.linearRampToValueAtTime(targetVolume, audioCtx.currentTime + 0.4); 
-                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.8); 
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 3.0);
-                    
                     const randomDelay = Math.floor(Math.random() * 1600) + 1200;
                     bgTimeout = setTimeout(playNextNote, randomDelay);
                 }
                 playNextNote();
             } catch(e) { console.log(e); }
-        }
-
-        function stopChillMusic() {
-            isMusicPlaying = false;
-            if (bgTimeout) {
-                clearTimeout(bgTimeout);
-                bgTimeout = null;
-            }
-        }
-
-        // Animal Crossing Stimm-Synthesizer mit globaler Statustracking-Logik
-        function speakAnimalCrossing(text) {
-            try {
-                initAudio();
-            } catch(e) { return; }
-            if(!audioCtx) return;
-
-            // Setze Flag auf true: Musik wird leiser
-            isAnimalVoiceSpeaking = true;
-
-            const words = text.split(" ");
-            let totalDuration = 0;
-
-            words.forEach((word, wordIdx) => {
-                const cleanWord = word.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-                if(cleanWord.length === 0) {
-                    totalDuration += 0.15;
-                    return;
-                }
-                
-                let wordPitchMod = 0.85 + (Math.random() * 0.4);
-                if(cleanWord.length > 6) wordPitchMod -= 0.1;
-                if(cleanWord.length < 3) wordPitchMod += 0.15;
-
-                for(let i = 0; i < cleanWord.length; i++) {
-                    const char = cleanWord[i];
-                    const charCode = char.charCodeAt(0);
-                    let baseFreq = 220;
-
-                    if(charCode >= 97 && charCode <= 122) {
-                        baseFreq = 200 + ((charCode - 97) * 18);
-                    } else if(charCode >= 48 && charCode <= 57) {
-                        baseFreq = 500 + ((charCode - 48) * 25);
-                    }
-
-                    baseFreq *= wordPitchMod;
-                    if(i % 2 === 0) baseFreq *= 1.12;
-
-                    const startTime = audioCtx.currentTime + totalDuration;
-                    const charDuration = 0.055 + (Math.random() * 0.025);
-
-                    const osc = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-
-                    const typeSelector = (charCode + i) % 3;
-                    if(typeSelector === 0) osc.type = 'triangle';
-                    else if(typeSelector === 1) osc.type = 'sawtooth';
-                    else osc.type = 'sine';
-
-                    osc.frequency.setValueAtTime(baseFreq, startTime);
-                    if(i === cleanWord.length - 1 && (char==='?' || char==='!')) {
-                        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.3, startTime + charDuration);
-                    } else {
-                        osc.frequency.linearRampToValueAtTime(baseFreq * (0.95 + Math.random()*0.1), startTime + charDuration);
-                    }
-
-                    gainNode.gain.setValueAtTime(0.0, startTime);
-                    gainNode.gain.linearRampToValueAtTime(0.28, startTime + 0.01);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + charDuration);
-
-                    osc.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-
-                    osc.start(startTime);
-                    osc.stop(startTime + charDuration);
-
-                    totalDuration += charDuration - 0.012;
-                }
-                totalDuration += 0.04;
-            });
-
-            // Wenn die Sprache komplett fertig ist, setzen wir das Flag wieder zurück
-            setTimeout(() => {
-                isAnimalVoiceSpeaking = false;
-            }, totalDuration * 1000);
-        }
-
-        function handleMediaPlaybackStarted() {
-            activeAudioTagsPlaying++;
-        }
-
-        function handleMediaPlaybackEnded() {
-            activeAudioTagsPlaying = Math.max(0, activeAudioTagsPlaying - 1);
         }
 
         const scene = new THREE.Scene();
@@ -350,6 +324,8 @@
         let mediaRecorder = null;
         let voiceAudioChunks = [];
         let isVoiceRecording = false;
+        let voiceRecordingTimerInterval = null;
+        let voiceRecordingSecondsElapsed = 0;
         let targetPeerId = null;
         let currentCallIsVideo = false;
         let isUpgradingCall = false; 
@@ -390,7 +366,7 @@
                         joinRoom(false);
                     } else if (data.type === 'chat') {
                         addMessage('Friend', data.text);
-                        showBubble('Friend', "Sent a message");
+                        showBubble('Friend', data.text); // Zeigt echten Text an statt Platzhalter
                         playMessageSound();
                     } else if (data.type === 'typing') {
                         document.getElementById('typing').innerText = data.text ? 'Friend is typing...' : '';
@@ -421,6 +397,9 @@
             document.getElementById('callStateTitle').innerText = isUpgradingCall ? "Call Active" : "Incoming Call...";
             document.getElementById('callTypeSub').innerText = currentCallIsVideo ? "Incoming Video Call" : "Incoming Voice Call";
             
+            // Stoppe Musik für Anrufe lokal
+            setLocalMusicMuteState(true);
+
             if (!isUpgradingCall) {
                 document.getElementById('incomingControls').style.display = 'flex';
                 document.getElementById('activeControls').style.display = 'none';
@@ -433,37 +412,57 @@
         async function initiateCall(wantVideo) {
             if(!targetPeerId) return alert("No peer connected to call.");
             currentCallIsVideo = wantVideo;
-            isInActiveCall = true; // Signalisiert, dass Musik pausieren soll
+            
+            // Schalte Musik stumm für das Telefonat
+            setLocalMusicMuteState(true);
+
             try {
                 document.getElementById('callOverlay').style.display = 'flex';
                 document.getElementById('callStateTitle').innerText = "Calling Friend...";
                 document.getElementById('callTypeSub').innerText = wantVideo ? "Video Call Session" : "Voice Call Session";
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
+                
+                // Anfordern bester Audio- und Video-Qualitätsparameter
+                const mediaConstraints = {
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+                    video: wantVideo ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } } : false
+                };
 
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantVideo });
+                localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
                 if(wantVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('localVideo').srcObject = localStream;
                 }
-                activeCallSession = peer.call(targetPeerId, localStream, { metadata: { video: wantVideo } });
+
+                activeCallSession = peer.call(targetPeerId, localStream, {
+                    metadata: { video: wantVideo }
+                });
                 handleCallStreamFlow(activeCallSession, wantVideo);
             } catch(err) {
                 console.error("Failed to capture local hardware stream context:", err);
-                alert("Could not access camera/microphone initialization layer.");
+                alert("Could not access camera/microphone layers.");
                 resetCallInterface();
             }
         }
 
         async function acceptIncomingCall() {
-            isInActiveCall = true;
             try {
                 if (localStream && !isUpgradingCall) {
                     localStream.getTracks().forEach(track => track.stop());
                 }
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: currentCallIsVideo });
+                
+                setLocalMusicMuteState(true);
+
+                const mediaConstraints = {
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+                    video: currentCallIsVideo ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } } : false
+                };
+
+                localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
+                
                 if(currentCallIsVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('localVideo').srcObject = localStream;
@@ -483,7 +482,6 @@
                 document.getElementById('callStateTitle').innerText = "Call Active";
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
-
                 if(isVideo || currentCallIsVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('remoteVideo').srcObject = remoteStream;
@@ -527,16 +525,20 @@
                     localStream.getTracks().forEach(t => t.stop());
                 }
                 currentCallIsVideo = true;
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                
+                const constraints = {
+                    audio: { echoCancellation: true, noiseSuppression: true },
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } }
+                };
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
                 document.getElementById('videoGrid').style.display = 'block';
                 document.getElementById('localVideo').srcObject = localStream;
                 document.getElementById('callTypeSub').innerText = "Video Call Session";
                 document.getElementById('callStateTitle').innerText = "Call Active";
-
+                
                 if(activeCallSession) activeCallSession.close();
                 activeCallSession = peer.call(targetPeerId, localStream, { metadata: { video: true } });
                 handleCallStreamFlow(activeCallSession, true);
-
                 setTimeout(() => { isUpgradingCall = false; }, 1000);
             } catch(e) {
                 console.error(e);
@@ -545,34 +547,33 @@
         }
 
         function declineOrHangupCall() {
+            isUpgradingCall = false;
             if(conn) conn.send({type: 'call_decline'});
+            if(activeCallSession) {
+                activeCallSession.close();
+            }
             resetCallInterface();
         }
 
         function resetCallInterface() {
-            isInActiveCall = false; // Musik darf im Hintergrund wieder spielen
+            if (isUpgradingCall) return;
             document.getElementById('callOverlay').style.display = 'none';
-            document.getElementById('videoGrid').style.display = 'none';
-            
             if(localStream) {
                 localStream.getTracks().forEach(track => track.stop());
                 localStream = null;
             }
-            if(activeCallSession) {
-                activeCallSession.close();
-                activeCallSession = null;
-            }
-            let audioNode = document.getElementById('hiddenRemoteAudio');
-            if(audioNode) {
-                audioNode.srcObject = null;
-            }
+            const audioNode = document.getElementById('hiddenRemoteAudio');
+            if(audioNode) audioNode.remove();
             myMicMuted = false;
             remoteAudioMuted = false;
             myCamMuted = false;
+            currentCallIsVideo = false;
             document.getElementById('muteMeBtn').classList.remove('muted-active');
             document.getElementById('muteFriendBtn').classList.remove('muted-active');
             document.getElementById('toggleCamBtn').classList.remove('muted-active');
-            isUpgradingCall = false;
+            
+            // Reaktiviert Musik nach Gesprächsende
+            setLocalMusicMuteState(false);
         }
 
         function toggleMuteMe() {
@@ -584,11 +585,11 @@
 
         function toggleMuteFriend() {
             remoteAudioMuted = !remoteAudioMuted;
+            const remoteAudio = document.getElementById('hiddenRemoteAudio');
+            if(remoteAudio) remoteAudio.muted = remoteAudioMuted;
+            const remoteVideo = document.getElementById('remoteVideo');
+            if(remoteVideo) remoteVideo.muted = remoteAudioMuted;
             document.getElementById('muteFriendBtn').classList.toggle('muted-active', remoteAudioMuted);
-            let audioNode = document.getElementById('hiddenRemoteAudio');
-            if(audioNode) audioNode.muted = remoteAudioMuted;
-            let videoNode = document.getElementById('remoteVideo');
-            if(videoNode) videoNode.muted = remoteAudioMuted;
         }
 
         function toggleCamera() {
@@ -598,206 +599,124 @@
             document.getElementById('toggleCamBtn').classList.toggle('muted-active', myCamMuted);
         }
 
+        function joinRoom(notifyPeer) {
+            document.getElementById('ui').style.display = 'none';
+            document.getElementById('chatBox').style.display = 'flex';
+            
+            initAudio();
+            startChillMusic();
+
+            player1Mesh = new THREE.Group();
+            const body1 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 1.2, 16), new THREE.MeshStandardMaterial({ color: 0xff3366 }));
+            const head1 = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffddcc }));
+            head1.position.y = 0.8;
+            player1Mesh.add(body1, head1);
+            player1Mesh.position.set(-1.2, 0.5, 0);
+            scene.add(player1Mesh);
+
+            player2Mesh = new THREE.Group();
+            const body2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 1.2, 16), new THREE.MeshStandardMaterial({ color: 0x3399ff }));
+            const head2 = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffddcc }));
+            head2.position.y = 0.8;
+            player2Mesh.add(body2, head2);
+            player2Mesh.position.set(1.2, 0.5, 0);
+            scene.add(player2Mesh);
+
+            if(cube) scene.remove(cube);
+
+            if (notifyPeer && conn) {
+                conn.send('JOIN_ROOM');
+            }
+        }
+
         function toggleSharePopover() {
             const pop = document.getElementById('sharePopover');
             pop.style.display = (pop.style.display === 'flex') ? 'none' : 'flex';
         }
 
-        function triggerFileInput(idPrefix) {
+        function triggerFileInput(idKey) {
             document.getElementById('sharePopover').style.display = 'none';
-            if(idPrefix === 'file') document.getElementById('genericFileInput').click();
-            if(idPrefix === 'gallery') document.getElementById('galleryFileInput').click();
-            if(idPrefix === 'camera') document.getElementById('cameraFileInput').click();
+            if(idKey === 'file') document.getElementById('genericFileInput').click();
+            if(idKey === 'gallery') document.getElementById('galleryFileInput').click();
+            if(idKey === 'camera') document.getElementById('cameraFileInput').click();
         }
 
-        function handleFileTransmission(inputElement, contextMode) {
+        function handleFileTransmission(inputElement, modeContext) {
             const file = inputElement.files[0];
-            if(!file || !conn) return;
-
+            if(!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 const rawBuffer = e.target.result;
-                const base64String = btoa(
-                    new Uint8Array(rawBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-                );
-
-                const packet = {
+                const metadataPayload = {
                     type: 'media',
                     mime: file.type,
                     name: file.name,
-                    payload: base64String,
-                    ctx: contextMode
+                    payload: rawBuffer
                 };
-
-                conn.send(packet);
-                addMediaMessage('You', packet);
-                showBubble('You', "Uploaded file");
+                if(conn) conn.send(metadataPayload);
+                addMediaMessage('You', metadataPayload);
             };
-            reader.readAsArrayBuffer(file);
-            inputElement.value = ""; 
+            reader.readAsDataURL(file);
+            inputElement.value = "";
         }
-
-        function addMediaMessage(sender, packet) {
-            const div = document.getElementById('messages');
-            const elementWrapper = document.createElement('div');
-            elementWrapper.innerHTML = `<b>${sender}:</b> `;
-
-            const rawBinary = atob(packet.payload);
-            const arrayBytes = new Uint8Array(rawBinary.length);
-            for (let i = 0; i < rawBinary.length; i++) {
-                arrayBytes[i] = rawBinary.charCodeAt(i);
-            }
-            const blobObj = new Blob([arrayBytes], { type: packet.mime });
-            const localBlobUrl = URL.createObjectURL(blobObj);
-
-            if(packet.mime.startsWith('image/')) {
-                const img = document.createElement('img');
-                img.src = localBlobUrl;
-                elementWrapper.appendChild(img);
-            } else if(packet.mime.startsWith('video/')) {
-                const vid = document.createElement('video');
-                vid.src = localBlobUrl;
-                vid.controls = true;
-                
-                // Track Musik Stopp Hooks bei Video-Wiedergabe
-                vid.addEventListener('play', handleMediaPlaybackStarted);
-                vid.addEventListener('pause', handleMediaPlaybackEnded);
-                vid.addEventListener('ended', handleMediaPlaybackEnded);
-                
-                elementWrapper.appendChild(vid);
-            } else if(packet.mime.startsWith('audio/')) {
-                const aud = document.createElement('audio');
-                aud.src = localBlobUrl;
-                aud.controls = true;
-                
-                // Track Musik Stopp Hooks bei Audio-Wiedergabe
-                aud.addEventListener('play', handleMediaPlaybackStarted);
-                aud.addEventListener('pause', handleMediaPlaybackEnded);
-                aud.addEventListener('ended', handleMediaPlaybackEnded);
-                
-                elementWrapper.appendChild(aud);
-            } else {
-                const link = document.createElement('a');
-                link.href = localBlobUrl;
-                link.download = packet.name;
-                link.className = 'file-link';
-                link.innerText = `📄 Download ${packet.name}`;
-                elementWrapper.appendChild(link);
-            }
-
-            div.appendChild(elementWrapper);
-            div.scrollTop = div.scrollHeight;
-        }
-
-        function joinRoom(isInitiator) {
-            if(isInitiator && conn) {
-                conn.send('JOIN_ROOM');
-            }
-            
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('chatBox').style.display = 'flex';
-            
-            if(cube) scene.remove(cube);
-
-            player1Mesh = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.4, 0.4, 1, 16),
-                new THREE.MeshStandardMaterial({ color: 0x00fff0, roughness: 0.3 })
-            );
-            player1Mesh.position.set(-1.2, 0.5, 0);
-            scene.add(player1Mesh);
-
-            player2Mesh = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.4, 0.4, 1, 16),
-                new THREE.MeshStandardMaterial({ color: 0xff007f, roughness: 0.3 })
-            );
-            player2Mesh.position.set(1.2, 0.5, 0);
-            scene.add(player2Mesh);
-
-            const label1 = createLabel(isHost ? 'You' : 'Friend', false);
-            label1.position.y = 0.8;
-            player1Mesh.add(label1);
-
-            const label2 = createLabel(isHost ? 'Friend' : 'You', false);
-            label2.position.y = 0.8;
-            player2Mesh.add(label2);
-
-            const floor = new THREE.Mesh(
-                new THREE.PlaneGeometry(12, 12),
-                new THREE.MeshStandardMaterial({ color: 0x332211, roughness: 0.8 })
-            );
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.y = 0;
-            scene.add(floor);
-
-            startChillMusic();
-        }
-
-        function createLabel(text, isBubble) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            
-            if(isBubble) {
-                ctx.fillStyle = 'rgba(0, 255, 240, 0.85)';
-                ctx.roundRect(10, 10, 492, 108, 20);
-                ctx.fill();
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = '#ffffff';
-                ctx.stroke();
-                ctx.fillStyle = '#000000';
-                ctx.font = 'bold 36px Arial';
-            } else {
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.roundRect(60, 20, 392, 88, 12);
-                ctx.fill();
-                ctx.fillStyle = '#ffffff';
-                ctx.font = '32px Arial';
-            }
-            
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, 256, 64);
-
-            const texture = new THREE.CanvasTexture(canvas);
-            const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
-            const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.scale.set(1.8, 0.45, 1);
-            return sprite;
-        }
-
-        const chatInput = document.getElementById('chatInput');
-        chatInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                const text = chatInput.value.trim();
-                if (!text) return;
-                
-                if (conn) {
-                    conn.send({ type: 'chat', text: text });
-                    conn.send({ type: 'typing', text: false });
-                }
-                
-                addMessage('You', text);
-                showBubble('You', text);
-                chatInput.value = '';
-            } else {
-                if (conn) conn.send({ type: 'typing', text: true });
-            }
-        });
-
-        chatInput.addEventListener('blur', () => {
-            if (conn) conn.send({ type: 'typing', text: false });
-        });
 
         function addMessage(sender, text) {
             const div = document.getElementById('messages');
             div.innerHTML += `<div><b>${sender}:</b> ${text}</div>`;
             div.scrollTop = div.scrollHeight;
-            
-            // Animal Crossing Stimme wird hier getriggert
-            speakAnimalCrossing(text);
         }
 
+        function addMediaMessage(sender, mediaData) {
+            const div = document.getElementById('messages');
+            let itemHTML = `<div><b>${sender}:</b><br>`;
+            
+            if(mediaData.mime.startsWith('image/')) {
+                itemHTML += `<img src="${mediaData.payload}" onclick="openFullscreenModal('${mediaData.payload}', 'image')">`;
+            } else if(mediaData.mime.startsWith('video/')) {
+                itemHTML += `<video src="${mediaData.payload}" onclick="openFullscreenModal('${mediaData.payload}', 'video')"></video>`;
+            } else if(mediaData.mime.startsWith('audio/')) {
+                // Lokaler Hook zum Pausieren der Musik bei Wiedergabe einer Sprachnachricht
+                itemHTML += `<audio src="${mediaData.payload}" controls onplay="setLocalMusicMuteState(true)" onended="setLocalMusicMuteState(false)" onpause="setLocalMusicMuteState(false)"></audio>`;
+            } else {
+                itemHTML += `<a class="file-link" href="${mediaData.payload}" download="${mediaData.name}">📁 Download ${mediaData.name}</a>`;
+            }
+            itemHTML += `</div>`;
+            div.innerHTML += itemHTML;
+            div.scrollTop = div.scrollHeight;
+        }
+
+        // Fullscreen Overlay Event Handlers
+        function openFullscreenModal(sourceUrl, mediaType) {
+            setLocalMusicMuteState(true); // Musik stoppen, wenn Video/Bild groß geöffnet wird
+            const modal = document.getElementById('mediaFullscreenModal');
+            const imgNode = document.getElementById('fullscreenImage');
+            const videoNode = document.getElementById('fullscreenVideo');
+            
+            modal.style.display = "flex";
+            if(mediaType === 'image') {
+                videoNode.style.display = "none";
+                videoNode.pause();
+                imgNode.src = sourceUrl;
+                imgNode.style.display = "block";
+            } else if(mediaType === 'video') {
+                imgNode.style.display = "none";
+                videoNode.src = sourceUrl;
+                videoNode.style.display = "block";
+                videoNode.play();
+                // Wenn Vollbild-Video zu Ende ist, Musik wieder starten
+                videoNode.onended = () => { setLocalMusicMuteState(false); };
+            }
+        }
+
+        function closeFullscreenModal() {
+            document.getElementById('mediaFullscreenModal').style.display = "none";
+            const videoNode = document.getElementById('fullscreenVideo');
+            videoNode.pause();
+            videoNode.src = "";
+            setLocalMusicMuteState(false); // Musik weiterspielen
+        }
+
+        // Animal Crossing Typings-Generator & 15-Sekunden-Timer
         function showBubble(target, text) {
             let activeMesh = null;
             if(target === 'You') {
@@ -810,69 +729,175 @@
             activeMesh.children.forEach(child => {
                 if(child.isBubbleSprite) activeMesh.remove(child);
             });
-            
-            const bubbleSprite = createLabel(text, true);
+
+            // Erstelle Sprite initial mit leerem String
+            const containerData = { currentText: "" };
+            const bubbleSprite = createLabel("", true);
             bubbleSprite.position.y = 1.4; 
             bubbleSprite.isBubbleSprite = true;
             activeMesh.add(bubbleSprite);
-            
-            setTimeout(() => {
-                activeMesh.remove(bubbleSprite);
-            }, 5000);
+
+            let charIdx = 0;
+            // Intervalgeschwindigkeit angepasst an Animal Crossing (ca. 45ms pro Buchstabe)
+            let typeInterval = setInterval(() => {
+                if(charIdx < text.length) {
+                    const nextChar = text[charIdx];
+                    containerData.currentText += nextChar;
+                    
+                    // Update Textur des Sprites dynamisch
+                    updateLabelTexture(bubbleSprite, containerData.currentText);
+                    
+                    // Spiele AC Geräusch pro Buchstabe (außer Leerzeichen)
+                    if(nextChar.trim().length > 0) {
+                        playAnimalCrossingVoiceCharacterClick(nextChar);
+                    }
+                    charIdx++;
+                } else {
+                    clearInterval(typeInterval);
+                    restoreMusicVolumeToNormal(); // Musik sanft zurück auf Normalpegel regeln
+                    
+                    // Blase bleibt genau 15 Sekunden auf dem Kopf stehen, nachdem sie fertig getippt wurde
+                    setTimeout(() => {
+                        if(activeMesh.children.includes(bubbleSprite)) {
+                            activeMesh.remove(bubbleSprite);
+                        }
+                    }, 15000);
+                }
+            }, 45);
         }
 
+        // Hilfsfunktion zur Erstellung des Canvas-Label Sprites
+        function createLabel(text, isBubble) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            drawBubbleCanvasContent(ctx, text, canvas.width, canvas.height, isBubble);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(1.8, 0.45, 1);
+            sprite.associatedCanvas = canvas; // Halte Referenz zum Updaten
+            return sprite;
+        }
+
+        // Hilfsfunktion zum Updaten des Labels Buchstabe für Buchstabe
+        function updateLabelTexture(sprite, text) {
+            const canvas = sprite.associatedCanvas;
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBubbleCanvasContent(ctx, text, canvas.width, canvas.height, true);
+            sprite.material.map.needsUpdate = true;
+        }
+
+        // Zeichnen der Sprechblasen-Canvasgrafik
+        function drawBubbleCanvasContent(ctx, text, w, h, isBubble) {
+            if(isBubble) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.strokeStyle = '#222222';
+                ctx.lineWidth = 4;
+                // Runde Box zeichnen
+                ctx.beginPath();
+                ctx.roundRect ? ctx.roundRect(10, 10, w - 20, h - 40, 20) : ctx.rect(10, 10, w - 20, h - 40);
+                ctx.fill();
+                ctx.stroke();
+
+                // Kleines Sprechblasen-Dreieck unten
+                ctx.beginPath();
+                ctx.moveTo(w / 2 - 15, h - 30);
+                ctx.lineTo(w / 2 + 15, h - 30);
+                ctx.lineTo(w / 2, h - 10);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+            ctx.fillStyle = '#111111';
+            ctx.font = 'bold 28px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, w / 2, h / 2 - 8);
+        }
+
+        // Sprachnachrichtenaufzeichnung mit Live-Sekundenzähler
         async function toggleVoiceRecording() {
-            const recBtn = document.getElementById('voiceRecBtn');
-            if(!isVoiceRecording) {
-                if(!targetPeerId) return alert("Connect to a peer first.");
+            const btn = document.getElementById('voiceRecBtn');
+            if (!isVoiceRecording) {
+                initAudio();
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     mediaRecorder = new MediaRecorder(stream);
                     voiceAudioChunks = [];
                     
                     mediaRecorder.ondataavailable = e => {
-                        if(e.data.size > 0) voiceAudioChunks.push(e.data);
+                        if (e.data.size > 0) voiceAudioChunks.push(e.data);
                     };
 
                     mediaRecorder.onstop = () => {
                         const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
                         const reader = new FileReader();
                         reader.onload = function(e) {
-                            const base64String = btoa(
-                                new Uint8Array(e.target.result).reduce((data, byte) => data + String.fromCharCode(byte), '')
-                            );
-                            const packet = {
+                            const metadataPayload = {
                                 type: 'media',
                                 mime: 'audio/webm',
-                                name: 'VoiceNote.webm',
-                                payload: base64String,
-                                ctx: 'voice'
+                                name: 'VoiceMsg.webm',
+                                payload: e.target.result
                             };
-                            if(conn) conn.send(packet);
-                            addMediaMessage('You', packet);
-                            showBubble('You', "🎤 Voice Note");
+                            if(conn) conn.send(metadataPayload);
+                            addMediaMessage('You', metadataPayload);
                         };
-                        reader.readAsArrayBuffer(audioBlob);
-                        
-                        stream.getTracks().forEach(track => track.stop());
+                        reader.readAsDataURL(audioBlob);
+                        stream.getTracks().forEach(t => t.stop());
                     };
 
-                    mediaRecorder.start();
                     isVoiceRecording = true;
-                    recBtn.classList.add('active-rec');
-                    recBtn.innerText = "🛑";
+                    voiceRecordingSecondsElapsed = 0;
+                    btn.classList.add('active-rec');
+                    btn.innerHTML = `🛑 ${voiceRecordingSecondsElapsed}s`;
+
+                    voiceRecordingTimerInterval = setInterval(() => {
+                        voiceRecordingSecondsElapsed++;
+                        btn.innerHTML = `🛑 ${voiceRecordingSecondsElapsed}s`;
+                    }, 1000);
+
+                    mediaRecorder.start();
                 } catch(err) {
+                    console.error(err);
                     alert("Could not access microphone infrastructure.");
                 }
             } else {
+                isVoiceRecording = false;
+                clearInterval(voiceRecordingTimerInterval);
                 if(mediaRecorder && mediaRecorder.state !== 'inactive') {
                     mediaRecorder.stop();
                 }
-                isVoiceRecording = false;
-                recBtn.classList.remove('active-rec');
-                recBtn.innerText = "🎙";
+                btn.classList.remove('active-rec');
+                btn.innerHTML = `🎙`;
             }
         }
+
+        const chatInput = document.getElementById('chatInput');
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const txt = chatInput.value.trim();
+                if(!txt) return;
+                
+                if(conn) conn.send({ type: 'chat', text: txt });
+                addMessage('You', txt);
+                showBubble('You', txt);
+                
+                chatInput.value = '';
+                if(conn) conn.send({ type: 'typing', text: false });
+            } else {
+                if(conn) conn.send({ type: 'typing', text: true });
+            }
+        });
+
+        chatInput.addEventListener('blur', () => {
+            if(conn) conn.send({ type: 'typing', text: false });
+        });
 
         window.addEventListener('click', (e) => {
             const pop = document.getElementById('sharePopover');
