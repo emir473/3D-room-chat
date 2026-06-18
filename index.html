@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -73,12 +73,6 @@
 
         /* Utility hidden input field hooks */
         .hidden-file-input { display: none !important; }
-/* Neue Styles */
-        #messages img, #messages video { max-width: 100%; max-height: 150px; border-radius: 8px; margin-top: 5px; cursor: pointer; display: block; border: 1px solid #444; }
-        .chat-input-container { display: flex; align-items: center; gap: 6px; }
-        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; }
-        .active-rec { background: #ff2233 !important; }
-        #timerDisplay { font-weight: bold; margin-right: 5px; color: #ff2233; }
     </style>
 </head>
 <body>
@@ -131,7 +125,6 @@
                 <div class="popover-item" onclick="triggerFileInput('camera')">ð¸ <span>Take Photo/Video</span></div>
             </div>
             <input type="text" id="chatInput" placeholder="Type a message... (Press Enter)">
-            <span id="timerDisplay" style="color: #00fff0; font-weight: bold; font-size: 14px; margin-right: 5px;"></span>      
             <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">ð</div>
         </div>
     </div>
@@ -555,35 +548,29 @@
             div.scrollTop = div.scrollHeight;
         }
 
-async function toggleVoiceRecording() {
+        async function toggleVoiceRecording() {
             const recBtn = document.getElementById('voiceRecBtn');
-            const timer = document.getElementById('timerDisplay');
-            
             if(!isVoiceRecording) {
                 try {
                     const recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     voiceAudioChunks = [];
-                    
-                    // Timer Start
-                    seconds = 0;
-                    timer.innerText = "0s";
-                    timerInterval = setInterval(() => {
-                        seconds++;
-                        timer.innerText = seconds + "s";
-                    }, 1000);
-
                     mediaRecorder = new MediaRecorder(recStream);
-                    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) voiceAudioChunks.push(e.data); };
+                    
+                    mediaRecorder.ondataavailable = e => {
+                        if (e.data.size > 0) voiceAudioChunks.push(e.data);
+                    };
+
                     mediaRecorder.onstop = () => {
-                        // Timer Stopp
-                        clearInterval(timerInterval);
-                        timer.innerText = "";
-                        
                         const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             if(conn) {
-                                const payload = { type: 'media', mime: 'audio/webm', name: 'voice_message.webm', dataUrl: e.target.result };
+                                const payload = {
+                                    type: 'media',
+                                    mime: 'audio/webm',
+                                    name: 'voice_message.webm',
+                                    dataUrl: e.target.result
+                                };
                                 conn.send(payload);
                                 addMediaMessage('You', payload);
                                 showBubble('You', "Voice Message");
@@ -592,12 +579,13 @@ async function toggleVoiceRecording() {
                         reader.readAsDataURL(audioBlob);
                         recStream.getTracks().forEach(t => t.stop());
                     };
+
                     mediaRecorder.start();
                     isVoiceRecording = true;
                     recBtn.classList.add('active-rec');
                 } catch(err) {
-                    console.error("Audio error:", err);
-                    alert("Could not initialize microphone.");
+                    console.error("Audio capture session error context:", err);
+                    alert("Could not initialize microphone hardware routing mapping layer.");
                 }
             } else {
                 if(mediaRecorder && mediaRecorder.state !== 'inactive') {
@@ -605,8 +593,6 @@ async function toggleVoiceRecording() {
                 }
                 isVoiceRecording = false;
                 recBtn.classList.remove('active-rec');
-                clearInterval(timerInterval);
-                timer.innerText = "";
             }
         }
 
