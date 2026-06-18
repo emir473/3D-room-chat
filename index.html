@@ -90,8 +90,8 @@
     </div>
 
     <div id="callBar">
-        <div class="call-trigger-btn" onclick="initiateCall(false)" title="Voice Call">ð</div>
-        <div class="call-trigger-btn" onclick="initiateCall(true)" title="Video Call">ð¹</div>
+        <div class="call-trigger-btn" onclick="initiateCall(false)" title="Voice Call">📞</div>
+        <div class="call-trigger-btn" onclick="initiateCall(true)" title="Video Call">📹</div>
     </div>
 
     <div id="callOverlay">
@@ -103,14 +103,14 @@
         <div id="callTypeSub">Voice Session</div>
         
         <div class="overlay-action-row" id="incomingControls">
-            <button class="call-action-btn btn-accept" onclick="acceptIncomingCall()">â</button>
-            <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()">â</button>
+            <button class="call-action-btn btn-accept" onclick="acceptIncomingCall()">✔</button>
+            <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()">✖</button>
         </div>
         <div class="overlay-action-row" id="activeControls" style="display: none;">
-            <button class="call-action-btn btn-control" id="muteMeBtn" onclick="toggleMuteMe()" title="Mute Mic">ð</button>
-            <button class="call-action-btn btn-control" id="muteFriendBtn" onclick="toggleMuteFriend()" title="Mute Friend">ð</button>
-            <button class="call-action-btn btn-control" id="toggleCamBtn" onclick="toggleCamera()" title="Toggle Camera">ð·</button>
-            <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()" title="Hang Up">ð</button>
+            <button class="call-action-btn btn-control" id="muteMeBtn" onclick="toggleMuteMe()" title="Mute Mic">🎙</button>
+            <button class="call-action-btn btn-control" id="muteFriendBtn" onclick="toggleMuteFriend()" title="Mute Friend">🔊</button>
+            <button class="call-action-btn btn-control" id="toggleCamBtn" onclick="toggleCamera()" title="Toggle Camera">📷</button>
+            <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()" title="Hang Up">🛑</button>
         </div>
     </div>
 
@@ -118,16 +118,16 @@
         <div id="messages"></div>
         <div id="typing"></div>
         <div class="chat-input-container">
-            <div class="action-icon-btn" onclick="toggleSharePopover()">â</div>
+            <div class="action-icon-btn" onclick="toggleSharePopover()">➕</div>
             <div id="sharePopover">
-                <div class="popover-item" onclick="triggerFileInput('file')">ð <span>Upload Files</span></div>
-                <div class="popover-item" onclick="triggerFileInput('gallery')">ð¼ <span>From Gallery</span></div>
-                <div class="popover-item" onclick="triggerFileInput('camera')">ð¸ <span>Take Photo/Video</span></div>
+                <div class="popover-item" onclick="triggerFileInput('file')">📁 <span>Upload Files</span></div>
+                <div class="popover-item" onclick="triggerFileInput('gallery')">🖼 <span>From Gallery</span></div>
+                <div class="popover-item" onclick="triggerFileInput('camera')">📸 <span>Take Photo/Video</span></div>
             </div>
             
             <input type="text" id="chatInput" placeholder="Type a message... (Press Enter)">
             
-            <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">ð</div>
+            <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">🎙</div>
         </div>
     </div>
 
@@ -488,7 +488,7 @@
             } else if(payload.mime.startsWith('audio/')) {
                 contentMarker = `<audio src="${payload.dataUrl}" controls></audio>`;
             } else {
-                contentMarker = `<a href="${payload.dataUrl}" download="${payload.name}" class="file-link">ð Download ${payload.name}</a>`;
+                contentMarker = `<a href="${payload.dataUrl}" download="${payload.name}" class="file-link">📁 Download ${payload.name}</a>`;
             }
 
             div.innerHTML += `<div><b>${sender}:</b> ${contentMarker}</div>`;
@@ -736,7 +736,7 @@
         // Explicitly dismiss attachments dropdown popover container if tapping outside space bounds
         window.addEventListener('click', (e) => {
             const pop = document.getElementById('sharePopover');
-            if(!e.target.innerText.includes('â') && pop.style.display === 'flex') {
+            if(!e.target.innerText.includes('➕') && pop.style.display === 'flex') {
                 pop.style.display = 'none';
             }
         });
