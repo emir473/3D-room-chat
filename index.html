@@ -22,10 +22,7 @@
         /* Layout adjustments for layout windows */
         #chatBox { position: absolute; bottom: 20px; left: 20px; width: 340px; height: 260px; background: rgba(20, 20, 20, 0.85); border: 1px solid #444; border-radius: 12px; display: none; flex-direction: column; padding: 12px; z-index: 100; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
         #messages { flex: 1; overflow-y: auto; font-size: 14px; margin-bottom: 8px; padding-right: 5px; }
-        
-        /* Optimierte, kleinere Medienansicht im Chat */
-        #messages img, #messages video { max-width: 120px; max-height: 120px; border-radius: 8px; margin-top: 5px; display: block; border: 2px solid #444; cursor: pointer; transition: transform 0.2s; object-fit: cover; }
-        #messages img:hover, #messages video:hover { transform: scale(1.03); border-color: #00fff0; }
+        #messages img, #messages video { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; border: 1px solid #444; }
         #messages audio { width: 100%; margin-top: 5px; display: block; }
         #messages .file-link { display: inline-block; background: #333; color: #00fff0; padding: 6px 12px; border-radius: 6px; text-decoration: none; margin-top: 5px; font-size: 12px; border: 1px solid #555; }
         #typing { font-size: 12px; color: #00fff0; height: 15px; margin-bottom: 4px; font-style: italic; }
@@ -35,13 +32,13 @@
         #chatInput { flex: 1; padding: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 20px; box-sizing: border-box; font-size: 14px; margin: 0; }
         
         /* Action Buttons styling */
-        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; flex-shrink: 0; transition: background 0.2s; font-size: 16px; margin: 0; position: relative; }
+        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; flex-shrink: 0; transition: background 0.2s; font-size: 16px; margin: 0; }
         .action-icon-btn:hover { background: #3a3a3a; }
-        .action-icon-btn.active-rec { background: #ff2233; animation: pulse-rec 1.5s infinite; width: auto; padding: 0 12px; border-radius: 18px; font-size: 13px; font-weight: bold; gap: 4px; }
+        .action-icon-btn.active-rec { background: #ff2233; animation: pulse-rec 1.5s infinite; }
 
         @keyframes pulse-rec {
             0% { transform: scale(1); }
-            50% { transform: scale(1.04); }
+            50% { transform: scale(1.08); }
             100% { transform: scale(1); }
         }
 
@@ -74,16 +71,14 @@
         #remoteVideo { width: 100%; height: 100%; object-fit: cover; pointer-events: auto; }
         #localVideo { position: absolute; bottom: 20px; right: 20px; width: 100px; height: 150px; object-fit: cover; border: 2px solid #00fff0; border-radius: 8px; background: #000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transform: scaleX(-1); pointer-events: auto; }
 
-        /* Modern Fullscreen Modal Overlay System */
-        #mediaFullscreenModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 10, 0.95); z-index: 2000; justify-content: center; align-items: center; }
-        #mediaFullscreenModal content { max-width: 90%; max-height: 90%; display: flex; justify-content: center; align-items: center; position: relative; }
-        #fullscreenImage { max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: none; border: 1px solid #444; }
-        #fullscreenVideo { max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: none; border: 1px solid #444; }
-        #closeModalBtn { position: absolute; top: 25px; right: 25px; width: 45px; height: 45px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: white; border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; z-index: 2010; }
-        #closeModalBtn:hover { background: #e74c3c; border-color: #e74c3c; transform: scale(1.05); }
-
         /* Utility hidden input field hooks */
         .hidden-file-input { display: none !important; }
+/* Neue Styles */
+        #messages img, #messages video { max-width: 100%; max-height: 150px; border-radius: 8px; margin-top: 5px; cursor: pointer; display: block; border: 1px solid #444; }
+        .chat-input-container { display: flex; align-items: center; gap: 6px; }
+        .action-icon-btn { width: 36px; height: 36px; background: #2a2a2a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #444; }
+        .active-rec { background: #ff2233 !important; }
+        #timerDisplay { font-weight: bold; margin-right: 5px; color: #ff2233; }
     </style>
 </head>
 <body>
@@ -101,8 +96,8 @@
     </div>
 
     <div id="callBar">
-        <div class="call-trigger-btn" onclick="initiateCall(false)" title="Voice Call">📞</div>
-        <div class="call-trigger-btn" onclick="initiateCall(true)" title="Video Call">📹</div>
+        <div class="call-trigger-btn" onclick="initiateCall(false)" title="Voice Call">ð</div>
+        <div class="call-trigger-btn" onclick="initiateCall(true)" title="Video Call">ð¹</div>
     </div>
 
     <div id="callOverlay">
@@ -112,16 +107,16 @@
         </div>
         <div id="callStateTitle">Call System</div>
         <div id="callTypeSub">Voice Session</div>
-        
+       
         <div class="overlay-action-row" id="incomingControls">
-            <button class="call-action-btn btn-accept" onclick="acceptIncomingCall()">✔</button>
-            <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()">✖</button>
+            <button class="call-action-btn btn-accept" onclick="acceptIncomingCall()">â</button>
+            <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()">â</button>
         </div>
         <div class="overlay-action-row" id="activeControls" style="display: none;">
-            <button class="call-action-btn btn-control" id="muteMeBtn" onclick="toggleMuteMe()" title="Mute Mic">🎙</button>
-            <button class="call-action-btn btn-control" id="muteFriendBtn" onclick="toggleMuteFriend()" title="Mute Friend">🔊</button>
-            <button class="call-action-btn btn-control" id="toggleCamBtn" onclick="requestOrToggleCamera()" title="Toggle Camera">📷</button>
-            <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()" title="Hang Up">🛑</button>
+            <button class="call-action-btn btn-control" id="muteMeBtn" onclick="toggleMuteMe()" title="Mute Mic">ð</button>
+            <button class="call-action-btn btn-control" id="muteFriendBtn" onclick="toggleMuteFriend()" title="Mute Friend">ð</button>
+            <button class="call-action-btn btn-control" id="toggleCamBtn" onclick="requestOrToggleCamera()" title="Toggle Camera">ð·</button>
+            <button class="call-action-btn btn-decline" onclick="declineOrHangupCall()" title="Hang Up">ð</button>
         </div>
     </div>
 
@@ -129,22 +124,15 @@
         <div id="messages"></div>
         <div id="typing"></div>
         <div class="chat-input-container">
-            <div class="action-icon-btn" onclick="toggleSharePopover()">➕</div>
+            <div class="action-icon-btn" onclick="toggleSharePopover()">â</div>
             <div id="sharePopover">
-                <div class="popover-item" onclick="triggerFileInput('file')">📁 <span>Upload Files</span></div>
-                <div class="popover-item" onclick="triggerFileInput('gallery')">🖼 <span>From Gallery</span></div>
-                <div class="popover-item" onclick="triggerFileInput('camera')">📸 <span>Take Photo/Video</span></div>
+                <div class="popover-item" onclick="triggerFileInput('file')">ð <span>Upload Files</span></div>
+                <div class="popover-item" onclick="triggerFileInput('gallery')">ð¼ <span>From Gallery</span></div>
+                <div class="popover-item" onclick="triggerFileInput('camera')">ð¸ <span>Take Photo/Video</span></div>
             </div>
             <input type="text" id="chatInput" placeholder="Type a message... (Press Enter)">
-            <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">🎙</div>
-        </div>
-    </div>
-
-    <div id="mediaFullscreenModal">
-        <button id="closeModalBtn" onclick="closeFullscreenModal()">✕</button>
-        <div id="mediaFullscreenContent">
-            <img id="fullscreenImage" src="" alt="Fullscreen view">
-            <video id="fullscreenVideo" controls playsinline></video>
+            <span id="timerDisplay" style="color: #00fff0; font-weight: bold; font-size: 14px; margin-right: 5px;"></span>      
+            <div class="action-icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()" title="Record Audio">ð</div>
         </div>
     </div>
 
@@ -157,9 +145,6 @@
     <script>
         let audioCtx = null;
         let bgTimeout = null;
-        let musicIsPausedLokal = false;
-        let targetMusicVolume = 0.35;
-        let globalGainNode = null;
 
         function initAudio() {
             if (!audioCtx) {
@@ -187,88 +172,24 @@
             } catch(e) { console.log(e); }
         }
 
-        // Animal Crossing Voice Generator Logic (Procedural Beeps & Bloops)
-        function playAnimalCrossingVoiceCharacterClick(char) {
-            try {
-                initAudio();
-                if (musicIsPausedLokal) return; 
-                
-                // Dim down background music volume smoothly if typing bubble voice active
-                if(globalGainNode) {
-                    globalGainNode.gain.setValueAtTime(globalGainNode.gain.value, audioCtx.currentTime);
-                    globalGainNode.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.1);
-                }
-
-                const code = char.toLowerCase().charCodeAt(0) || 100;
-                let pitchFactor = 1.0;
-                if (code >= 97 && code <= 122) {
-                    pitchFactor = 0.7 + ((code - 97) / 25) * 0.9; 
-                }
-
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                // Animal Crossing uses hybrid triangle/square nodes
-                osc.type = (code % 2 === 0) ? 'triangle' : 'square';
-                
-                const baseFreq = 260 * pitchFactor;
-                osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
-                
-                // Add tiny pitch modulation (wobble) characteristic of Animal Crossing voices
-                osc.frequency.linearRampToValueAtTime(baseFreq * 1.15, audioCtx.currentTime + 0.03);
-                osc.frequency.linearRampToValueAtTime(baseFreq * 0.95, audioCtx.currentTime + 0.06);
-
-                gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.075);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.08);
-            } catch(e) { console.log(e); }
-        }
-
-        function restoreMusicVolumeToNormal() {
-            if(globalGainNode && !musicIsPausedLokal) {
-                globalGainNode.gain.setValueAtTime(globalGainNode.gain.value, audioCtx.currentTime);
-                globalGainNode.gain.linearRampToValueAtTime(targetMusicVolume, audioCtx.currentTime + 0.4);
-            }
-        }
-
-        // Mute / Unmute Chill Background Music safely locally
-        function setLocalMusicMuteState(shouldMute) {
-            musicIsPausedLokal = shouldMute;
-            if(globalGainNode) {
-                globalGainNode.gain.setValueAtTime(globalGainNode.gain.value, audioCtx.currentTime);
-                globalGainNode.gain.linearRampToValueAtTime(shouldMute ? 0.0 : targetMusicVolume, audioCtx.currentTime + 0.2);
-            }
-        }
-
         function startChillMusic() {
             try {
                 initAudio();
-                if(!globalGainNode) {
-                    globalGainNode = audioCtx.createGain();
-                    globalGainNode.gain.setValueAtTime(targetMusicVolume, audioCtx.currentTime);
-                    globalGainNode.connect(audioCtx.destination);
-                }
                 const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33];
                 function playNextNote() {
                     if (!audioCtx) return;
-                    if (!musicIsPausedLokal) {
-                        const osc = audioCtx.createOscillator();
-                        const gain = audioCtx.createGain();
-                        const randomNote = notes[Math.floor(Math.random() * notes.length)];
-                        osc.type = 'sine';
-                        osc.frequency.setValueAtTime(randomNote, audioCtx.currentTime);
-                        gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
-                        gain.gain.linearRampToValueAtTime(1.0, audioCtx.currentTime + 0.4); 
-                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.8); 
-                        osc.connect(gain);
-                        gain.connect(globalGainNode);
-                        osc.start();
-                        osc.stop(audioCtx.currentTime + 3.0);
-                    }
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    const randomNote = notes[Math.floor(Math.random() * notes.length)];
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(randomNote, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 0.4); 
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.8); 
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 3.0);
                     const randomDelay = Math.floor(Math.random() * 1600) + 1200;
                     bgTimeout = setTimeout(playNextNote, randomDelay);
                 }
@@ -324,8 +245,6 @@
         let mediaRecorder = null;
         let voiceAudioChunks = [];
         let isVoiceRecording = false;
-        let voiceRecordingTimerInterval = null;
-        let voiceRecordingSecondsElapsed = 0;
         let targetPeerId = null;
         let currentCallIsVideo = false;
         let isUpgradingCall = false; 
@@ -366,7 +285,7 @@
                         joinRoom(false);
                     } else if (data.type === 'chat') {
                         addMessage('Friend', data.text);
-                        showBubble('Friend', data.text); // Zeigt echten Text an statt Platzhalter
+                        showBubble('Friend', "Sent a message");
                         playMessageSound();
                     } else if (data.type === 'typing') {
                         document.getElementById('typing').innerText = data.text ? 'Friend is typing...' : '';
@@ -397,9 +316,6 @@
             document.getElementById('callStateTitle').innerText = isUpgradingCall ? "Call Active" : "Incoming Call...";
             document.getElementById('callTypeSub').innerText = currentCallIsVideo ? "Incoming Video Call" : "Incoming Voice Call";
             
-            // Stoppe Musik für Anrufe lokal
-            setLocalMusicMuteState(true);
-
             if (!isUpgradingCall) {
                 document.getElementById('incomingControls').style.display = 'flex';
                 document.getElementById('activeControls').style.display = 'none';
@@ -412,10 +328,6 @@
         async function initiateCall(wantVideo) {
             if(!targetPeerId) return alert("No peer connected to call.");
             currentCallIsVideo = wantVideo;
-            
-            // Schalte Musik stumm für das Telefonat
-            setLocalMusicMuteState(true);
-
             try {
                 document.getElementById('callOverlay').style.display = 'flex';
                 document.getElementById('callStateTitle').innerText = "Calling Friend...";
@@ -423,13 +335,11 @@
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
                 
-                // Anfordern bester Audio- und Video-Qualitätsparameter
-                const mediaConstraints = {
-                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-                    video: wantVideo ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } } : false
-                };
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: wantVideo
+                });
 
-                localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
                 if(wantVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('localVideo').srcObject = localStream;
@@ -441,7 +351,7 @@
                 handleCallStreamFlow(activeCallSession, wantVideo);
             } catch(err) {
                 console.error("Failed to capture local hardware stream context:", err);
-                alert("Could not access camera/microphone layers.");
+                alert("Could not access camera/microphone initialization layer.");
                 resetCallInterface();
             }
         }
@@ -452,24 +362,22 @@
                     localStream.getTracks().forEach(track => track.stop());
                 }
                 
-                setLocalMusicMuteState(true);
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: currentCallIsVideo
+                });
 
-                const mediaConstraints = {
-                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-                    video: currentCallIsVideo ? { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } } : false
-                };
-
-                localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
-                
+
                 if(currentCallIsVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('localVideo').srcObject = localStream;
                 }
+
                 activeCallSession.answer(localStream);
                 handleCallStreamFlow(activeCallSession, currentCallIsVideo);
-                isUpgradingCall = false;
+                isUpgradingCall = false; 
             } catch(err) {
                 console.error("Error answering incoming media flow context:", err);
                 alert("Could not initialize device peripherals to answer call.");
@@ -482,6 +390,7 @@
                 document.getElementById('callStateTitle').innerText = "Call Active";
                 document.getElementById('incomingControls').style.display = 'none';
                 document.getElementById('activeControls').style.display = 'flex';
+                
                 if(isVideo || currentCallIsVideo) {
                     document.getElementById('videoGrid').style.display = 'block';
                     document.getElementById('remoteVideo').srcObject = remoteStream;
@@ -525,20 +434,16 @@
                     localStream.getTracks().forEach(t => t.stop());
                 }
                 currentCallIsVideo = true;
-                
-                const constraints = {
-                    audio: { echoCancellation: true, noiseSuppression: true },
-                    video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 60 } }
-                };
-                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
                 document.getElementById('videoGrid').style.display = 'block';
                 document.getElementById('localVideo').srcObject = localStream;
                 document.getElementById('callTypeSub').innerText = "Video Call Session";
                 document.getElementById('callStateTitle').innerText = "Call Active";
-                
+
                 if(activeCallSession) activeCallSession.close();
                 activeCallSession = peer.call(targetPeerId, localStream, { metadata: { video: true } });
                 handleCallStreamFlow(activeCallSession, true);
+                
                 setTimeout(() => { isUpgradingCall = false; }, 1000);
             } catch(e) {
                 console.error(e);
@@ -556,7 +461,8 @@
         }
 
         function resetCallInterface() {
-            if (isUpgradingCall) return;
+            if (isUpgradingCall) return; 
+            
             document.getElementById('callOverlay').style.display = 'none';
             if(localStream) {
                 localStream.getTracks().forEach(track => track.stop());
@@ -564,6 +470,7 @@
             }
             const audioNode = document.getElementById('hiddenRemoteAudio');
             if(audioNode) audioNode.remove();
+            
             myMicMuted = false;
             remoteAudioMuted = false;
             myCamMuted = false;
@@ -571,9 +478,8 @@
             document.getElementById('muteMeBtn').classList.remove('muted-active');
             document.getElementById('muteFriendBtn').classList.remove('muted-active');
             document.getElementById('toggleCamBtn').classList.remove('muted-active');
-            
-            // Reaktiviert Musik nach Gesprächsende
-            setLocalMusicMuteState(false);
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('localVideo').srcObject = null;
         }
 
         function toggleMuteMe() {
@@ -585,48 +491,18 @@
 
         function toggleMuteFriend() {
             remoteAudioMuted = !remoteAudioMuted;
-            const remoteAudio = document.getElementById('hiddenRemoteAudio');
-            if(remoteAudio) remoteAudio.muted = remoteAudioMuted;
-            const remoteVideo = document.getElementById('remoteVideo');
-            if(remoteVideo) remoteVideo.muted = remoteAudioMuted;
+            const remoteVideoEl = document.getElementById('remoteVideo');
+            const hiddenAudioEl = document.getElementById('hiddenRemoteAudio');
+            if(remoteVideoEl) remoteVideoEl.muted = remoteAudioMuted;
+            if(hiddenAudioEl) hiddenAudioEl.muted = remoteAudioMuted;
             document.getElementById('muteFriendBtn').classList.toggle('muted-active', remoteAudioMuted);
         }
 
         function toggleCamera() {
-            if(!localStream) return;
+            if(!localStream || localStream.getVideoTracks().length === 0) return;
             myCamMuted = !myCamMuted;
             localStream.getVideoTracks().forEach(t => t.enabled = !myCamMuted);
             document.getElementById('toggleCamBtn').classList.toggle('muted-active', myCamMuted);
-        }
-
-        function joinRoom(notifyPeer) {
-            document.getElementById('ui').style.display = 'none';
-            document.getElementById('chatBox').style.display = 'flex';
-            
-            initAudio();
-            startChillMusic();
-
-            player1Mesh = new THREE.Group();
-            const body1 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 1.2, 16), new THREE.MeshStandardMaterial({ color: 0xff3366 }));
-            const head1 = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffddcc }));
-            head1.position.y = 0.8;
-            player1Mesh.add(body1, head1);
-            player1Mesh.position.set(-1.2, 0.5, 0);
-            scene.add(player1Mesh);
-
-            player2Mesh = new THREE.Group();
-            const body2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 1.2, 16), new THREE.MeshStandardMaterial({ color: 0x3399ff }));
-            const head2 = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffddcc }));
-            head2.position.y = 0.8;
-            player2Mesh.add(body2, head2);
-            player2Mesh.position.set(1.2, 0.5, 0);
-            scene.add(player2Mesh);
-
-            if(cube) scene.remove(cube);
-
-            if (notifyPeer && conn) {
-                conn.send('JOIN_ROOM');
-            }
         }
 
         function toggleSharePopover() {
@@ -634,31 +510,254 @@
             pop.style.display = (pop.style.display === 'flex') ? 'none' : 'flex';
         }
 
-        function triggerFileInput(idKey) {
+        function triggerFileInput(type) {
             document.getElementById('sharePopover').style.display = 'none';
-            if(idKey === 'file') document.getElementById('genericFileInput').click();
-            if(idKey === 'gallery') document.getElementById('galleryFileInput').click();
-            if(idKey === 'camera') document.getElementById('cameraFileInput').click();
+            if(type === 'file') document.getElementById('genericFileInput').click();
+            if(type === 'gallery') document.getElementById('galleryFileInput').click();
+            if(type === 'camera') document.getElementById('cameraFileInput').click();
         }
 
-        function handleFileTransmission(inputElement, modeContext) {
-            const file = inputElement.files[0];
-            if(!file) return;
+        function handleFileTransmission(inputEl, contextMode) {
+            const file = inputEl.files[0];
+            if(!file || !conn) return;
+
             const reader = new FileReader();
             reader.onload = function(e) {
-                const rawBuffer = e.target.result;
-                const metadataPayload = {
+                const payload = {
                     type: 'media',
                     mime: file.type,
                     name: file.name,
-                    payload: rawBuffer
+                    dataUrl: e.target.result
                 };
-                if(conn) conn.send(metadataPayload);
-                addMediaMessage('You', metadataPayload);
+                conn.send(payload);
+                addMediaMessage('You', payload);
+                showBubble('You', "Sent attachments");
             };
             reader.readAsDataURL(file);
-            inputElement.value = "";
+            inputEl.value = '';
         }
+
+        function addMediaMessage(sender, payload) {
+            const div = document.getElementById('messages');
+            let contentMarker = '';
+
+            if(payload.mime.startsWith('image/')) {
+                contentMarker = `<img src="${payload.dataUrl}" alt="shared image" onclick="window.open(this.src)"/>`;
+            } else if(payload.mime.startsWith('video/')) {
+                contentMarker = `<video src="${payload.dataUrl}" controls playsinline></video>`;
+            } else if(payload.mime.startsWith('audio/')) {
+                contentMarker = `<audio src="${payload.dataUrl}" controls></audio>`;
+            } else {
+                contentMarker = `<a href="${payload.dataUrl}" download="${payload.name}" class="file-link">ð Download ${payload.name}</a>`;
+            }
+
+            div.innerHTML += `<div><b>${sender}:</b> ${contentMarker}</div>`;
+            div.scrollTop = div.scrollHeight;
+        }
+
+async function toggleVoiceRecording() {
+            const recBtn = document.getElementById('voiceRecBtn');
+            const timer = document.getElementById('timerDisplay');
+            
+            if(!isVoiceRecording) {
+                try {
+                    const recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    voiceAudioChunks = [];
+                    
+                    // Timer Start
+                    seconds = 0;
+                    timer.innerText = "0s";
+                    timerInterval = setInterval(() => {
+                        seconds++;
+                        timer.innerText = seconds + "s";
+                    }, 1000);
+
+                    mediaRecorder = new MediaRecorder(recStream);
+                    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) voiceAudioChunks.push(e.data); };
+                    mediaRecorder.onstop = () => {
+                        // Timer Stopp
+                        clearInterval(timerInterval);
+                        timer.innerText = "";
+                        
+                        const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            if(conn) {
+                                const payload = { type: 'media', mime: 'audio/webm', name: 'voice_message.webm', dataUrl: e.target.result };
+                                conn.send(payload);
+                                addMediaMessage('You', payload);
+                                showBubble('You', "Voice Message");
+                            }
+                        };
+                        reader.readAsDataURL(audioBlob);
+                        recStream.getTracks().forEach(t => t.stop());
+                    };
+                    mediaRecorder.start();
+                    isVoiceRecording = true;
+                    recBtn.classList.add('active-rec');
+                } catch(err) {
+                    console.error("Audio error:", err);
+                    alert("Could not initialize microphone.");
+                }
+            } else {
+                if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                isVoiceRecording = false;
+                recBtn.classList.remove('active-rec');
+                clearInterval(timerInterval);
+                timer.innerText = "";
+            }
+        }
+
+        function joinRoom(shouldSendSignal) {
+            if (shouldSendSignal && conn) {
+                conn.send('JOIN_ROOM');
+            }
+            scene.remove(cube);
+            startChillMusic();
+            const floorMat = new THREE.MeshStandardMaterial({color: 0x5c4033, roughness: 0.7});
+            const floor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.2, 10), floorMat);
+            floor.position.y = -0.1;
+            scene.add(floor);
+
+            const carpetMat = new THREE.MeshStandardMaterial({color: 0x990000, roughness: 0.9});
+            const carpet = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.02, 3.5), carpetMat);
+            carpet.position.set(0, 0.01, 0);
+            scene.add(carpet);
+
+            const wallMat = new THREE.MeshStandardMaterial({color: 0xe67e22, roughness: 0.6});
+            const backWall = new THREE.Mesh(new THREE.BoxGeometry(12, 6, 0.2), wallMat);
+            backWall.position.set(0, 3, -5);
+            scene.add(backWall);
+            
+            const skyMat = new THREE.MeshBasicMaterial({color: 0x5dade2});
+            const sky = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), skyMat);
+            sky.position.set(0, 3.5, -4.95);
+            scene.add(sky);
+
+            const windowGroup = new THREE.Group();
+            windowGroup.position.set(0, 3.5, -4.9);
+            const glassMat = new THREE.MeshStandardMaterial({color: 0xffffff, transparent: true, opacity: 0.3, roughness: 0.1});
+            const glass = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), glassMat);
+            windowGroup.add(glass);
+
+            const frameMat = new THREE.MeshStandardMaterial({color: 0xffffff});
+            const borderTopBot = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), frameMat); borderTopBot.position.set(0, 1, 0); windowGroup.add(borderTopBot);
+            const borderTopBot2 = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 0.15), frameMat); borderTopBot2.position.set(0, -1, 0); windowGroup.add(borderTopBot2);
+            const borderLeftRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight.position.set(1.5, 0, 0); windowGroup.add(borderLeftRight);
+            const borderLeftRight2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.1, 0.15), frameMat); borderLeftRight2.position.set(-1.5, 0, 0); windowGroup.add(borderLeftRight2);
+            const horizBar = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 0.1), frameMat); windowGroup.add(horizBar);
+            const vertBar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2, 0.1), frameMat); windowGroup.add(vertBar);
+            scene.add(windowGroup);
+
+            const lampGroup = new THREE.Group();
+            lampGroup.position.set(0, 6, 0);
+
+            const wireMat = new THREE.MeshBasicMaterial({color: 0x111111});
+            const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.8), wireMat); wire.position.y = -0.9; lampGroup.add(wire);
+
+            const bulbMat = new THREE.MeshBasicMaterial({color: 0xfff2cc});
+            const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), bulbMat); bulb.position.y = -1.8; lampGroup.add(bulb);
+            scene.add(lampGroup);
+            const spotLight = new THREE.SpotLight(0xfff2cc, 3.5, 10, Math.PI / 4, 0.5, 1);
+            spotLight.position.set(0, 4.2, 0);
+            spotLight.target.position.set(0, 0, 0);
+            scene.add(spotLight);
+            scene.add(spotLight.target);
+            const table = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.6, 1.8), new THREE.MeshStandardMaterial({color: 0x4a2c11, roughness: 0.5}));
+            table.position.set(0, 0.3, 0);
+            scene.add(table);
+
+            camera.position.set(0, 3.5, 6.5);
+            camera.lookAt(0, 0.8, 0);
+
+            let p1LabelText = isHost ? "You" : "Friend";
+            let p2LabelText = isHost ? "Friend" : "You";
+            player1Mesh = createCharacter(0x0055ff);
+            player1Mesh.position.set(-2.3, 0.5, 0);
+            player1Mesh.lookAt(0, 0.5, 0);
+            
+            const p1Label = createLabel(p1LabelText); p1Label.position.y = 0.85; player1Mesh.add(p1Label);
+            scene.add(player1Mesh);
+            player2Mesh = createCharacter(0xff2233);
+            player2Mesh.position.set(2.3, 0.5, 0);
+            player2Mesh.lookAt(0, 0.5, 0);
+            
+            const p2Label = createLabel(p2LabelText); p2Label.position.y = 0.85; player2Mesh.add(p2Label);
+            scene.add(player2Mesh);
+            document.getElementById('ui').style.display = 'none';
+            document.getElementById('chatBox').style.display = 'flex';
+        }
+
+        function createLabel(text, isBubble = false) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            if(isBubble) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.roundRect(10, 10, 492, 108, 20);
+                ctx.fill();
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = '#111111';
+            } else {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.roundRect(100, 30, 312, 68, 12);
+                ctx.fill();
+                ctx.font = 'bold 28px Arial';
+                ctx.fillStyle = '#ffffff';
+            }
+            
+            ctx.textAlign = 'center';
+            ctx.fillText(text, 256, 74);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(2.5, 0.6, 1);
+            return sprite;
+        }
+
+        function createCharacter(color) {
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshStandardMaterial({color: color, roughness: 0.3}));
+            group.add(body);
+            
+            const eyeMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+            const pupilMat = new THREE.MeshBasicMaterial({color: 0x000000});
+            const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
+            
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+            leftEye.position.set(-0.18, 0.15, 0.42);
+            const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(0.18, 0.15, 0.42);
+            const leftPupil = new THREE.Mesh(eyeGeo, pupilMat); leftPupil.scale.set(0.5,0.5,0.5);
+            leftPupil.position.set(-0.18, 0.15, 0.48);
+            const rightPupil = new THREE.Mesh(eyeGeo, pupilMat); rightPupil.scale.set(0.5,0.5,0.5); rightPupil.position.set(0.18, 0.15, 0.48);
+            
+            group.add(leftEye, rightEye, leftPupil, rightPupil);
+            return group;
+        }
+
+        const chatInput = document.getElementById('chatInput');
+        chatInput.addEventListener('input', () => {
+            if (conn) {
+                conn.send({type: 'typing', text: chatInput.value.length > 0});
+            }
+        });
+        chatInput.onkeypress = (e) => {
+            if (e.key === 'Enter' && conn) {
+                const msg = chatInput.value;
+                if(!msg.trim()) return;
+                
+                conn.send({type: 'chat', text: msg});
+                addMessage('You', msg);
+                showBubble('You', "Sent text");
+                
+                chatInput.value = '';
+                conn.send({type: 'typing', text: false});
+            }
+        };
 
         function addMessage(sender, text) {
             const div = document.getElementById('messages');
@@ -666,57 +765,6 @@
             div.scrollTop = div.scrollHeight;
         }
 
-        function addMediaMessage(sender, mediaData) {
-            const div = document.getElementById('messages');
-            let itemHTML = `<div><b>${sender}:</b><br>`;
-            
-            if(mediaData.mime.startsWith('image/')) {
-                itemHTML += `<img src="${mediaData.payload}" onclick="openFullscreenModal('${mediaData.payload}', 'image')">`;
-            } else if(mediaData.mime.startsWith('video/')) {
-                itemHTML += `<video src="${mediaData.payload}" onclick="openFullscreenModal('${mediaData.payload}', 'video')"></video>`;
-            } else if(mediaData.mime.startsWith('audio/')) {
-                // Lokaler Hook zum Pausieren der Musik bei Wiedergabe einer Sprachnachricht
-                itemHTML += `<audio src="${mediaData.payload}" controls onplay="setLocalMusicMuteState(true)" onended="setLocalMusicMuteState(false)" onpause="setLocalMusicMuteState(false)"></audio>`;
-            } else {
-                itemHTML += `<a class="file-link" href="${mediaData.payload}" download="${mediaData.name}">📁 Download ${mediaData.name}</a>`;
-            }
-            itemHTML += `</div>`;
-            div.innerHTML += itemHTML;
-            div.scrollTop = div.scrollHeight;
-        }
-
-        // Fullscreen Overlay Event Handlers
-        function openFullscreenModal(sourceUrl, mediaType) {
-            setLocalMusicMuteState(true); // Musik stoppen, wenn Video/Bild groß geöffnet wird
-            const modal = document.getElementById('mediaFullscreenModal');
-            const imgNode = document.getElementById('fullscreenImage');
-            const videoNode = document.getElementById('fullscreenVideo');
-            
-            modal.style.display = "flex";
-            if(mediaType === 'image') {
-                videoNode.style.display = "none";
-                videoNode.pause();
-                imgNode.src = sourceUrl;
-                imgNode.style.display = "block";
-            } else if(mediaType === 'video') {
-                imgNode.style.display = "none";
-                videoNode.src = sourceUrl;
-                videoNode.style.display = "block";
-                videoNode.play();
-                // Wenn Vollbild-Video zu Ende ist, Musik wieder starten
-                videoNode.onended = () => { setLocalMusicMuteState(false); };
-            }
-        }
-
-        function closeFullscreenModal() {
-            document.getElementById('mediaFullscreenModal').style.display = "none";
-            const videoNode = document.getElementById('fullscreenVideo');
-            videoNode.pause();
-            videoNode.src = "";
-            setLocalMusicMuteState(false); // Musik weiterspielen
-        }
-
-        // Animal Crossing Typings-Generator & 15-Sekunden-Timer
         function showBubble(target, text) {
             let activeMesh = null;
             if(target === 'You') {
@@ -725,183 +773,21 @@
                 activeMesh = isHost ? player2Mesh : player1Mesh;
             }
             if(!activeMesh) return;
-            
             activeMesh.children.forEach(child => {
                 if(child.isBubbleSprite) activeMesh.remove(child);
             });
-
-            // Erstelle Sprite initial mit leerem String
-            const containerData = { currentText: "" };
-            const bubbleSprite = createLabel("", true);
+            const bubbleSprite = createLabel(text, true);
             bubbleSprite.position.y = 1.4; 
             bubbleSprite.isBubbleSprite = true;
             activeMesh.add(bubbleSprite);
-
-            let charIdx = 0;
-            // Intervalgeschwindigkeit angepasst an Animal Crossing (ca. 45ms pro Buchstabe)
-            let typeInterval = setInterval(() => {
-                if(charIdx < text.length) {
-                    const nextChar = text[charIdx];
-                    containerData.currentText += nextChar;
-                    
-                    // Update Textur des Sprites dynamisch
-                    updateLabelTexture(bubbleSprite, containerData.currentText);
-                    
-                    // Spiele AC Geräusch pro Buchstabe (außer Leerzeichen)
-                    if(nextChar.trim().length > 0) {
-                        playAnimalCrossingVoiceCharacterClick(nextChar);
-                    }
-                    charIdx++;
-                } else {
-                    clearInterval(typeInterval);
-                    restoreMusicVolumeToNormal(); // Musik sanft zurück auf Normalpegel regeln
-                    
-                    // Blase bleibt genau 15 Sekunden auf dem Kopf stehen, nachdem sie fertig getippt wurde
-                    setTimeout(() => {
-                        if(activeMesh.children.includes(bubbleSprite)) {
-                            activeMesh.remove(bubbleSprite);
-                        }
-                    }, 15000);
-                }
-            }, 45);
+            setTimeout(() => {
+                activeMesh.remove(bubbleSprite);
+            }, 5000);
         }
-
-        // Hilfsfunktion zur Erstellung des Canvas-Label Sprites
-        function createLabel(text, isBubble) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            
-            drawBubbleCanvasContent(ctx, text, canvas.width, canvas.height, isBubble);
-
-            const texture = new THREE.CanvasTexture(canvas);
-            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-            const sprite = new THREE.Sprite(material);
-            sprite.scale.set(1.8, 0.45, 1);
-            sprite.associatedCanvas = canvas; // Halte Referenz zum Updaten
-            return sprite;
-        }
-
-        // Hilfsfunktion zum Updaten des Labels Buchstabe für Buchstabe
-        function updateLabelTexture(sprite, text) {
-            const canvas = sprite.associatedCanvas;
-            if(!canvas) return;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBubbleCanvasContent(ctx, text, canvas.width, canvas.height, true);
-            sprite.material.map.needsUpdate = true;
-        }
-
-        // Zeichnen der Sprechblasen-Canvasgrafik
-        function drawBubbleCanvasContent(ctx, text, w, h, isBubble) {
-            if(isBubble) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                ctx.strokeStyle = '#222222';
-                ctx.lineWidth = 4;
-                // Runde Box zeichnen
-                ctx.beginPath();
-                ctx.roundRect ? ctx.roundRect(10, 10, w - 20, h - 40, 20) : ctx.rect(10, 10, w - 20, h - 40);
-                ctx.fill();
-                ctx.stroke();
-
-                // Kleines Sprechblasen-Dreieck unten
-                ctx.beginPath();
-                ctx.moveTo(w / 2 - 15, h - 30);
-                ctx.lineTo(w / 2 + 15, h - 30);
-                ctx.lineTo(w / 2, h - 10);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-            }
-            ctx.fillStyle = '#111111';
-            ctx.font = 'bold 28px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, w / 2, h / 2 - 8);
-        }
-
-        // Sprachnachrichtenaufzeichnung mit Live-Sekundenzähler
-        async function toggleVoiceRecording() {
-            const btn = document.getElementById('voiceRecBtn');
-            if (!isVoiceRecording) {
-                initAudio();
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    voiceAudioChunks = [];
-                    
-                    mediaRecorder.ondataavailable = e => {
-                        if (e.data.size > 0) voiceAudioChunks.push(e.data);
-                    };
-
-                    mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const metadataPayload = {
-                                type: 'media',
-                                mime: 'audio/webm',
-                                name: 'VoiceMsg.webm',
-                                payload: e.target.result
-                            };
-                            if(conn) conn.send(metadataPayload);
-                            addMediaMessage('You', metadataPayload);
-                        };
-                        reader.readAsDataURL(audioBlob);
-                        stream.getTracks().forEach(t => t.stop());
-                    };
-
-                    isVoiceRecording = true;
-                    voiceRecordingSecondsElapsed = 0;
-                    btn.classList.add('active-rec');
-                    btn.innerHTML = `🛑 ${voiceRecordingSecondsElapsed}s`;
-
-                    voiceRecordingTimerInterval = setInterval(() => {
-                        voiceRecordingSecondsElapsed++;
-                        btn.innerHTML = `🛑 ${voiceRecordingSecondsElapsed}s`;
-                    }, 1000);
-
-                    mediaRecorder.start();
-                } catch(err) {
-                    console.error(err);
-                    alert("Could not access microphone infrastructure.");
-                }
-            } else {
-                isVoiceRecording = false;
-                clearInterval(voiceRecordingTimerInterval);
-                if(mediaRecorder && mediaRecorder.state !== 'inactive') {
-                    mediaRecorder.stop();
-                }
-                btn.classList.remove('active-rec');
-                btn.innerHTML = `🎙`;
-            }
-        }
-
-        const chatInput = document.getElementById('chatInput');
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const txt = chatInput.value.trim();
-                if(!txt) return;
-                
-                if(conn) conn.send({ type: 'chat', text: txt });
-                addMessage('You', txt);
-                showBubble('You', txt);
-                
-                chatInput.value = '';
-                if(conn) conn.send({ type: 'typing', text: false });
-            } else {
-                if(conn) conn.send({ type: 'typing', text: true });
-            }
-        });
-
-        chatInput.addEventListener('blur', () => {
-            if(conn) conn.send({ type: 'typing', text: false });
-        });
 
         window.addEventListener('click', (e) => {
             const pop = document.getElementById('sharePopover');
-            if(!e.target.innerText.includes('➕') && pop.style.display === 'flex') {
+            if(!e.target.innerText.includes('â') && pop.style.display === 'flex') {
                 pop.style.display = 'none';
             }
         });
